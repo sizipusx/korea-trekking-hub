@@ -20,13 +20,14 @@ interface Props {
   onCategoryChange: (cat: string) => void;
   onSelect: (trail: Trail) => void;
   currentMonth: number;
+  forestCount?: number;
 }
 
 const CATEGORIES = ['전체', '동서트레일', '국가숲길', '코리아둘레길', '국립공원', '제주 올레', '지자체 트레일', '백두대간'];
 
 export default function MapSidebar({
   trails, selectedId, filterCategory,
-  onCategoryChange, onSelect, currentMonth,
+  onCategoryChange, onSelect, currentMonth, forestCount = 0,
 }: Props) {
   const filtered = filterCategory === '전체'
     ? trails
@@ -36,17 +37,15 @@ export default function MapSidebar({
     <aside className="flex flex-col h-full overflow-hidden"
       style={{ background: 'rgba(10,15,30,0.97)', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
 
-      {/* ── 헤더 ──────────────────────────────────── */}
       <div className="px-4 py-4 border-b border-white/8 flex-shrink-0"
         style={{ background: 'linear-gradient(180deg,#052e16,#0a1628)' }}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-2xl">🥾</span>
           <h1 className="text-sm font-black text-emerald-100 tracking-tight">Korea Trekking Hub</h1>
         </div>
-        <p className="text-[10px] text-emerald-600">전국 {trails.length}개 코스 지도</p>
+        <p className="text-[10px] text-emerald-600">전국 {trails.length}개 코스 · 🏕 휴양림 {forestCount}개</p>
       </div>
 
-      {/* ── 카테고리 필터 ────────────────────────── */}
       <div className="px-3 py-3 border-b border-white/6 flex-shrink-0">
         <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-2">카테고리 필터</p>
         <div className="flex flex-wrap gap-1">
@@ -68,7 +67,6 @@ export default function MapSidebar({
         </div>
       </div>
 
-      {/* ── 트레일 목록 ──────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1.5">
         <p className="text-[9px] text-slate-600 uppercase tracking-widest px-1 mb-2">
           {filtered.length}개 코스
@@ -87,7 +85,6 @@ export default function MapSidebar({
                 background: isSelected ? `${catColor}15` : 'rgba(255,255,255,0.025)',
                 borderColor: isSelected ? `${catColor}55` : 'rgba(255,255,255,0.06)',
               }}>
-              {/* 코스명 + 뱃지 */}
               <div className="flex items-start justify-between gap-1 mb-1">
                 <span className="text-[12px] font-bold text-slate-100 leading-snug flex-1">
                   {trail.name}
@@ -99,7 +96,6 @@ export default function MapSidebar({
                   </span>
                 )}
               </div>
-              {/* 서브 정보 */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-bold" style={{ color: catColor }}>
                   {CATEGORY_META[trail.category as keyof typeof CATEGORY_META]?.emoji} {trail.category}
@@ -118,10 +114,9 @@ export default function MapSidebar({
         })}
       </div>
 
-      {/* ── 푸터 ─────────────────────────────────── */}
       <div className="px-4 py-3 border-t border-white/6 flex-shrink-0 text-center">
-        <p className="text-[9px] text-slate-700">Phase 3 · 카카오맵 API 연동 완료</p>
-        <p className="text-[9px] text-slate-700">Phase 4 예정 → 탐방 기록 기능</p>
+        <p className="text-[9px] text-slate-700">Phase 5 · 자연휴양림 {forestCount}개 연동</p>
+        <p className="text-[9px] text-slate-700">국립·공립·사립 예약정보 제공</p>
       </div>
     </aside>
   );
