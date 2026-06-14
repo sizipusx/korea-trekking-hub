@@ -64,9 +64,15 @@ export default function ForestDetailPanel({ forest, onClose }: Props) {
           style={{ background: `${color}0d`, border: `1px solid ${color}25` }}>
           <p className="text-[10px] text-cyan-400 mb-1 font-bold">📅 예약 방식</p>
           <p className="text-[12px] text-slate-200 leading-relaxed">
-            {forest.fcfs_type ? `선착순 ${forest.fcfs_type}` : '예약처 문의'}
-            {forest.open_time && <span className="text-slate-400"> · {forest.open_time}</span>}
+            {forest.fcfs_type
+              ? `선착순 · ${forest.fcfs_type}${forest.fcfs_type === '익월말' ? ' 예약' : ''}`
+              : '예약처 문의'}
           </p>
+          {forest.open_time && (
+            <p className="text-[12px] font-bold text-amber-400 mt-1">
+              🔔 {forest.fcfs_type === '익월말' ? '다음 달 신청' : '신청'}: {forest.open_time}
+            </p>
+          )}
         </div>
 
         {/* 추첨제 / 우선예약 */}
