@@ -177,6 +177,7 @@ export async function GET() {
         var color = FOREST_COLORS[forest.category] || '#0891b2';
         var emoji = FOREST_EMOJI[forest.category] || '🏕';
         var pos = new kakao.maps.LatLng(forest.lat, forest.lng);
+        // 휴양림은 둥근 사각(다이아몬드형) 마커로 트레일과 시각적 구분
         var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">'
           + '<path d="M15 0L30 13v12a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V13z" fill="' + color + '" opacity="0.95"/>'
           + '<text x="15" y="22" text-anchor="middle" font-size="12">' + emoji + '</text></svg>';
@@ -192,6 +193,16 @@ export async function GET() {
           var resv = forest.reservation_url
             ? '<a href="' + forest.reservation_url + '" target="_blank" style="color:#22d3ee;text-decoration:none">예약 바로가기 →</a>'
             : (forest.reservation_org || '개별 문의');
+          // 예약 방식 + 선착순 오픈 시점 (공립 익월말은 '다음 달 신청'으로 강조)
+          var fcfs = forest.fcfs_type || '';
+          var openTime = forest.open_time || '';
+          var resvType = fcfs
+            ? ('선착순 · ' + fcfs + (fcfs === '익월말' ? ' 예약' : ''))
+            : '예약처 문의';
+          var openLabel = (fcfs === '익월말') ? '다음 달 신청' : '신청';
+          var openLine = openTime
+            ? '<p style="margin:4px 0 0;font-size:11px;font-weight:700;color:#fbbf24">🔔 ' + openLabel + ': ' + openTime + '</p>'
+            : '';
           var div = document.createElement('div');
           div.style.cssText = 'background:#0f172a;border:2px solid ' + color
             + ';border-radius:12px;padding:12px 14px;min-width:230px;max-width:280px;'
@@ -207,7 +218,8 @@ export async function GET() {
             + '</div>'
             + '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:6px 8px;margin-bottom:6px">'
             +   '<p style="margin:0;font-size:10px;color:#94a3b8">예약 방식</p>'
-            +   '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">' + (forest.fcfs_type || '문의') + (forest.open_time ? ' · ' + forest.open_time : '') + '</p>'
+            +   '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">' + resvType + '</p>'
+            +   openLine
             + '</div>'
             + '<p style="margin:0 0 4px;font-size:10px;color:#94a3b8">추첨제 대상: <span style="color:#cbd5e1">' + lottery + '</span></p>'
             + '<p style="margin:6px 0 0;font-size:11px">' + resv + '</p>';
