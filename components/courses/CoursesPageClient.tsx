@@ -121,13 +121,13 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
     }
   }, []);
 
-  // 지도 모드 진입 시 또는 필터 변경 시 재조회
+  // 지도 모드 + 필터(카테고리·원천·지역) 변경 시 즉시 재조회
+  // search 는 타이핑마다 fetch가 일어나므로 제외 → "필터 적용" 클릭 시만 반영
   useEffect(() => {
-    if (viewMode === 'map') {
-      fetchMapCourses(category, source, region, search);
-    }
+    if (viewMode !== 'map') return;
+    fetchMapCourses(category, source, region, search);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode]);
+  }, [viewMode, category, source, region]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -149,9 +149,9 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
 
   function applyFilters() {
     startTransition(() => router.push(buildUrl({ page: 0 })));
-    // 지도 모드에서는 즉시 재조회 (URL 전환과 무관하게)
+    // search 키워드가 바뀐 경우 강제 재fetch (lastMapKey 우회)
     if (viewMode === 'map') {
-      lastMapKey.current = ''; // 강제 재fetch
+      lastMapKey.current = '';
       fetchMapCourses(category, source, region, search);
     }
   }
