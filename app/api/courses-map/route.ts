@@ -57,6 +57,6 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(allData, {
-    headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    headers: { 'Cache-Control': 'no-store' }, // 항상 최신 데이터 (캐시 방지)
   });
 }

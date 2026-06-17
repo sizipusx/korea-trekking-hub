@@ -5,7 +5,7 @@ async function fetchKakaoSDK(appkey: string): Promise<string> {
     // clusterer 라이브러리 함께 로드
     const res = await fetch(
       `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appkey}&autoload=false&libraries=clusterer`,
-      { cache: 'force-cache' }
+      { cache: 'no-store' } // 항상 최신 SDK (force-cache 제거)
     );
     return await res.text();
   } catch {
