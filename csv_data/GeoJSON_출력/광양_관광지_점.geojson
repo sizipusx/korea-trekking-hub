@@ -1,0 +1,13 @@
+{
+"type": "FeatureCollection",
+"name": "광양_관광지_점",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "FTR_CDE": "MT102", "FTR_IDN": 1, "MOUNT_NAM": "백운산둘레길4코스", "MOUNT_ID": 104, "BJD_CDE": "4623036021", "VIL_NM": "느랭이골", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.710426505987911, 35.059813455500006 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT102", "FTR_IDN": 2, "MOUNT_NAM": "백운산둘레길1코스", "MOUNT_ID": 112, "BJD_CDE": "4623032023", "VIL_NM": "옥룡사지", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.605749118143592, 35.047069899567965 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT102", "FTR_IDN": 3, "MOUNT_NAM": "백운산둘레길1코스", "MOUNT_ID": 112, "BJD_CDE": "4623032023", "VIL_NM": "백운산자연휴양림", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.591583641826929, 35.054866459843495 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT102", "FTR_IDN": 4, "MOUNT_NAM": "백운산둘레길6코스", "MOUNT_ID": 102, "BJD_CDE": "4623033027", "VIL_NM": "국사봉랜드", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.653194404798356, 35.005855446796531 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT102", "FTR_IDN": 5, "MOUNT_NAM": "마로산등산로1코스", "MOUNT_ID": 34, "BJD_CDE": "4623025030", "VIL_NM": "마로산성", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.616700407372264, 34.966756520326634 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT102", "FTR_IDN": 6, "MOUNT_NAM": "백운산둘레길3코스", "MOUNT_ID": 105, "BJD_CDE": "4623036022", "VIL_NM": "매화마을", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.716687975551594, 35.078126041907282 ] } }
+]
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>데이터 현황 대시보드 — Korea Outdoor Activity Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{--primary:#2d6a4f;--accent:#52b788;--bg:#f0f7f3;--card:#fff;--border:#d8e8e0;--text:#1b2e24;--muted:#6b8f75;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+  nav{background:var(--primary);padding:0 24px;display:flex;align-items:center;gap:20px;height:52px;}
+  nav .logo{color:#fff;font-weight:700;font-size:1rem;text-decoration:none;}
+  nav a{color:rgba(255,255,255,.75);text-decoration:none;font-size:.88rem;padding:5px 10px;border-radius:6px;transition:.2s;}
+  nav a:hover,nav a.active{color:#fff;background:rgba(255,255,255,.15);}
+  .hero{background:linear-gradient(135deg,var(--primary) 0%,#40916c 100%);color:#fff;padding:36px 32px 32px;text-align:center;}
+  .hero h1{font-size:1.8rem;font-weight:700;margin-bottom:6px;}
+  .hero p{opacity:.85;font-size:.95rem;}
+  main{max-width:1200px;margin:0 auto;padding:32px 20px;}
+  /* KPI 카드 */
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+  .kpi{background:var(--card);border-radius:14px;padding:20px 22px;border:1px solid var(--border);text-align:center;}
+  .kpi .num{font-size:2rem;font-weight:700;color:var(--primary);line-height:1.1;}
+  .kpi .lbl{font-size:.82rem;color:var(--muted);margin-top:4px;}
+  .kpi .sub{font-size:.72rem;color:var(--accent);margin-top:2px;}
+  /* 차트 섹션 */
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px;}
+  .chart-card{background:var(--card);border-radius:14px;padding:22px;border:1px solid var(--border);}
+  .chart-card h2{font-size:.95rem;font-weight:700;color:var(--primary);margin-bottom:16px;}
+  .chart-wrap{position:relative;height:240px;}
+  /* 지역 커버리지 */
+  .coverage{background:var(--card);border-radius:14px;padding:22px;border:1px solid var(--border);margin-bottom:24px;}
+  .coverage h2{font-size:.95rem;font-weight:700;color:var(--primary);margin-bottom:14px;}
+  .region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .region-item{background:var(--bg);border-radius:8px;padding:10px 14px;border:1px solid var(--border);}
+  .region-item .rname{font-weight:600;font-size:.85rem;}
+  .region-item .rbar{height:6px;background:var(--border);border-radius:3px;margin:6px 0;}
+  .region-item .rfill{height:100%;background:var(--accent);border-radius:3px;}
+  .region-item .rcnt{font-size:.75rem;color:var(--muted);}
+  /* 레이어 테이블 */
+  .layer-table{background:var(--card);border-radius:14px;padding:22px;border:1px solid var(--border);margin-bottom:24px;}
+  .layer-table h2{font-size:.95rem;font-weight:700;color:var(--primary);margin-bottom:14px;}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;}
+  th{background:var(--primary);color:#fff;padding:9px 12px;text-align:left;font-weight:600;}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);}
+  tr:hover td{background:#f0f7f3;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.73rem;font-weight:600;}
+  .b-line{background:#dde9ff;color:#1a2e6b;}
+  .b-point{background:#d8f3dc;color:#1b4332;}
+  footer{text-align:center;padding:20px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+<nav>
+  <a href="schema.html" class="logo">🏔️ Korea Outdoor Portal</a>
+  <a href="schema.html">스키마 설계</a>
+  <a href="courses.html">코스 탐색</a>
+  <a href="dashboard.html" class="active">데이터 현황</a>
+</nav>
+
+<div class="hero">
+  <h1>📊 데이터 수집 현황 대시보드</h1>
+  <p>Korea Outdoor Activity Portal — 통합 데이터 현황 (기준일: 2026. 06. 17)</p>
+</div>
+
+<main>
+
+<!-- KPI -->
+<div class="kpi-grid">
+  <div class="kpi"><div class="num">7,493</div><div class="lbl">GPX 파일</div><div class="sub">7,483개 분석 완료</div></div>
+  <div class="kpi"><div class="num">5,182</div><div class="lbl">CSV 코스 레코드</div><div class="sub">16개 파일 통합</div></div>
+  <div class="kpi"><div class="num">22</div><div class="lbl">GeoJSON 레이어</div><div class="sub">3개 좌표계 → WGS84</div></div>
+  <div class="kpi"><div class="num">11</div><div class="lbl">지역 커버리지</div><div class="sub">전국 광역 시도</div></div>
+</div>
+
+<!-- 차트 2열 -->
+<div class="chart-grid">
+  <div class="chart-card">
+    <h2>카테고리별 코스 분포 (CSV)</h2>
+    <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h2>GPX 코스 거리 구간 분포</h2>
+    <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h2>데이터셋별 GPX 코스 수</h2>
+    <div class="chart-wrap"><canvas id="dsChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h2>고도 데이터 보유 현황 (GPX)</h2>
+    <div class="chart-wrap"><canvas id="elevChart"></canvas></div>
+  </div>
+</div>
+
+<!-- 지역 커버리지 -->
+<div class="coverage">
+  <h2>🗺️ 지역별 데이터 커버리지</h2>
+  <div class="region-grid" id="regionGrid"></div>
+</div>
+
+<!-- GeoJSON 레이어 목록 -->
+<div class="layer-table">
+  <h2>🗂️ GeoJSON 레이어 현황 (Shapefile 변환 완료)</h2>
+  <table>
+    <thead><tr><th>레이어명</th><th>지오메트리</th><th>피처 수</th><th>원본 CRS</th><th>변환 CRS</th><th>지역</th></tr></thead>
+    <tbody>
+      <tr><td>경기광주 등산로</td><td><span class="badge b-line">선형</span></td><td>81</td><td>EPSG:5186</td><td>EPSG:4326</td><td>경기도 광주시</td></tr>
+      <tr><td>한라산둘레길 500m구간</td><td><span class="badge b-line">선형</span></td><td>198</td><td>EPSG:5179</td><td>EPSG:4326</td><td>제주특별자치도</td></tr>
+      <tr><td>한라산둘레길 구간별</td><td><span class="badge b-line">선형</span></td><td>31</td><td>EPSG:5179</td><td>EPSG:4326</td><td>제주특별자치도</td></tr>
+      <tr><td>광양 등산로</td><td><span class="badge b-line">선형</span></td><td>39</td><td>EPSG:5186</td><td>EPSG:4326</td><td>전라남도 광양시</td></tr>
+      <tr><td>광양 둘레길</td><td><span class="badge b-line">선형</span></td><td>17</td><td>EPSG:5186</td><td>EPSG:4326</td><td>전라남도 광양시</td></tr>
+      <tr><td>광양 탐방로</td><td><span class="badge b-line">선형</span></td><td>3</td><td>EPSG:5186</td><td>EPSG:4326</td><td>전라남도 광양시</td></tr>
+      <tr><td>제주 하영올레</td><td><span class="badge b-line">선형</span></td><td>3</td><td>EPSG:4326</td><td>EPSG:4326</td><td>제주 서귀포시</td></tr>
+      <tr><td>광양 주차장·화장실·대피소 등 POI</td><td><span class="badge b-point">점형</span></td><td>1,879</td><td>EPSG:5186</td><td>EPSG:4326</td><td>전라남도 광양시</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</main>
+<footer>Korea Outdoor Activity Portal · 데이터 출처: 공공데이터포털 · 산림청 · 한국등산트레킹지원센터</footer>
+
+<script>
+const green=['#52b788','#40916c','#2d6a4f','#1b4332','#74c69d','#95d5b2','#b7e4c7','#d8f3dc'];
+const blue =['#3498db','#2980b9','#1a5276','#5dade2','#85c1e9','#aed6f1','#d6eaf8','#ebf5fb'];
+
+// 1. 카테고리 도넛
+new Chart(document.getElementById('catChart'),{
+  type:'doughnut',
+  data:{
+    labels:['등산로','문화길','숲길','오름','테마길','섬트레킹','트레킹길','둘레길'],
+    datasets:[{data:[4539,370,96,68,48,27,26,8],backgroundColor:green,borderWidth:2,borderColor:'#fff'}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11}}}}}
+});
+
+// 2. 거리 구간 바
+new Chart(document.getElementById('distChart'),{
+  type:'bar',
+  data:{
+    labels:['~5km','5~10km','10~20km','20~50km','50~100km','100km+'],
+    datasets:[{label:'코스 수',data:[3441,2473,1153,393,19,4],backgroundColor:blue,borderRadius:6}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,grid:{color:'#eee'}},x:{grid:{display:false}}}}
+});
+
+// 3. 데이터셋별 수평 바
+new Chart(document.getElementById('dsChart'),{
+  type:'bar',
+  data:{
+    labels:['전국주요봉우리','100대명산','9정맥','오감만족 숲길','백두대간','국가숲길'],
+    datasets:[{label:'GPX 파일',data:[6400,620,180,120,80,50],backgroundColor:green[0],borderRadius:4}]
+  },
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true,grid:{color:'#eee'}},y:{grid:{display:false}}}}
+});
+
+// 4. 고도 보유 파이
+new Chart(document.getElementById('elevChart'),{
+  type:'pie',
+  data:{
+    labels:['고도 데이터 있음 (백두대간·숲길)','고도 없음 (좌표만)'],
+    datasets:[{data:[7386,97],backgroundColor:['#52b788','#ccc'],borderWidth:2,borderColor:'#fff'}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}
+});
+
+// 지역 커버리지
+const regions=[
+  {name:'경기도',count:110,max:200},{name:'서울특별시',count:370,max:400},
+  {name:'인천광역시',count:21,max:200},{name:'충청남도',count:4455,max:5000},
+  {name:'전라남도',count:56,max:200},{name:'전북특별자치도',count:59,max:200},
+  {name:'경상남도',count:15,max:200},{name:'제주특별자치도',count:126,max:200},
+  {name:'강원도',count:45,max:200},{name:'경상북도',count:30,max:200},
+  {name:'충청북도',count:20,max:200},
+];
+document.getElementById('regionGrid').innerHTML=regions.map(r=>`
+  <div class="region-item">
+    <div class="rname">📍 ${r.name}</div>
+    <div class="rbar"><div class="rfill" style="width:${Math.min(100,r.count/r.max*100)}%"></div></div>
+    <div class="rcnt">${r.count.toLocaleString()}개 레코드</div>
+  </div>`).join('');
+</script>
+</body>
+</html>

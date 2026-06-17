@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import type { Trail, TrailFilters } from '@/types/trail';
 import { CATEGORY_META, DIFFICULTY_COLOR } from '@/types/trail';
 import TrailCard from './TrailCard';
@@ -58,14 +59,29 @@ export default function TrailListClient({ initialTrails, stats }: Props) {
       <header style={{ background: 'linear-gradient(90deg,#052e16,#064e3b,#0c4a6e)', borderBottom: '2px solid #10b981' }}
         className="px-5 py-6">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-4xl">🥾</span>
-            <div>
-              <h1 className="text-2xl font-black text-emerald-50 tracking-tight">Korea Trekking Hub</h1>
-              <p className="text-xs text-emerald-400 tracking-widest mt-0.5">
-                전국 트래킹·백패킹 마스터 데이터베이스 — Powered by Next.js + Supabase
-              </p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">🥾</span>
+              <div>
+                <h1 className="text-2xl font-black text-emerald-50 tracking-tight">Korea Trekking Hub</h1>
+                <p className="text-xs text-emerald-400 tracking-widest mt-0.5">
+                  전국 트래킹·백패킹 마스터 데이터베이스 — Powered by Next.js + Supabase
+                </p>
+              </div>
             </div>
+            {/* 추가 페이지 네비게이션 */}
+            <nav className="flex gap-2 shrink-0">
+              {([
+                ['🔍', '코스 탐색', '/courses'],
+                ['📊', '대시보드', '/dashboard'],
+                ['📐', '스키마', '/schema'],
+              ] as [string, string, string][]).map(([emoji, label, href]) => (
+                <Link key={href} href={href}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-emerald-300 hover:bg-emerald-900/30 transition border border-transparent hover:border-emerald-800">
+                  {emoji} {label}
+                </Link>
+              ))}
+            </nav>
           </div>
           {/* 통계 바 */}
           <StatsBar

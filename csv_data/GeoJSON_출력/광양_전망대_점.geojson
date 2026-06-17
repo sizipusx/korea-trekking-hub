@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"name": "광양_전망대_점",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "FTR_CDE": "MT107", "FTR_IDN": 1, "MOUNT_NAM": "구봉산등산로1코스", "MOUNT_ID": 39, "BJD_CDE": "4623010200", "VIE_CDE": "VIE002", "VIE_NM": "구봉산전망대", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.642659661933251, 34.936516144772327 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT107", "FTR_IDN": 2, "MOUNT_NAM": "국사봉등산로2코스", "MOUNT_ID": 11, "BJD_CDE": "4623025029", "VIE_CDE": "VIE002", "VIE_NM": "국사봉정상", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.645754319634989, 34.996299370191871 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT107", "FTR_IDN": 3, "MOUNT_NAM": "서산등산로3코스", "MOUNT_ID": 17, "BJD_CDE": "4623025035", "VIE_CDE": "VIE001", "VIE_NM": "전망좋은곳", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.570111951537726, 34.97126965719491 ] } }
+]
+}

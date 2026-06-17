@@ -1,0 +1,16 @@
+{
+"type": "FeatureCollection",
+"name": "광양_세면장_점",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 1, "MOUNT_NAM": "백운산둘레길1코스", "MOUNT_ID": 112, "BJD_CDE": "4623032023", "STO_CNT": 10, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.604927497418487, 35.04163167172004 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 2, "MOUNT_NAM": "백운산둘레길9코스", "MOUNT_ID": 107, "BJD_CDE": "4673000000", "STO_CNT": 10, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.544083993082751, 35.187368943811087 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 3, "MOUNT_NAM": "백운산둘레길9코스", "MOUNT_ID": 107, "BJD_CDE": "4673000000", "STO_CNT": 10, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.54722899442514, 35.188310229298125 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 4, "MOUNT_NAM": "백운산둘레길9코스", "MOUNT_ID": 107, "BJD_CDE": "4673000000", "STO_CNT": 5, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.56057629569591, 35.191403273362234 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 5, "MOUNT_NAM": "백운산둘레길9코스", "MOUNT_ID": 107, "BJD_CDE": "4673000000", "STO_CNT": 10, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.619629853557171, 35.187800288929004 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 6, "MOUNT_NAM": "백운산둘레길9코스", "MOUNT_ID": 107, "BJD_CDE": "4673000000", "STO_CNT": 10, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.620887185464099, 35.185438813091771 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 7, "MOUNT_NAM": "백운산둘레길3코스", "MOUNT_ID": 105, "BJD_CDE": "4623036023", "STO_CNT": 7, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.691323344983914, 35.1258751244631 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 8, "MOUNT_NAM": "백운산둘레길3코스", "MOUNT_ID": 105, "BJD_CDE": "4623036023", "STO_CNT": 7, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.692649410295175, 35.102281915243729 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT205", "FTR_IDN": 9, "MOUNT_NAM": "서산등산로1코스", "MOUNT_ID": 20, "BJD_CDE": "4623025023", "STO_CNT": 10, "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.574083608664949, 34.973334476499907 ] } }
+]
+}

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>통합 데이터 스키마 — Korea Outdoor Activity Portal</title>
+<style>
+  :root{--primary:#2d6a4f;--accent:#52b788;--bg:#f8faf9;--card:#fff;--border:#d8e8e0;--text:#1b2e24;--muted:#6b8f75;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+  /* nav */
+  nav{background:var(--primary);padding:0 32px;display:flex;align-items:center;gap:24px;height:56px;}
+  nav .logo{color:#fff;font-weight:700;font-size:1.1rem;text-decoration:none;}
+  nav a{color:rgba(255,255,255,.75);text-decoration:none;font-size:.9rem;padding:6px 12px;border-radius:6px;transition:.2s;}
+  nav a:hover,nav a.active{color:#fff;background:rgba(255,255,255,.15);}
+  /* hero */
+  .hero{background:linear-gradient(135deg,var(--primary) 0%,#40916c 100%);color:#fff;padding:48px 32px 40px;text-align:center;}
+  .hero h1{font-size:2rem;font-weight:700;margin-bottom:8px;}
+  .hero p{opacity:.85;font-size:1rem;}
+  /* layout */
+  main{max-width:1100px;margin:0 auto;padding:40px 24px;}
+  /* section */
+  section{margin-bottom:48px;}
+  h2{font-size:1.25rem;font-weight:700;color:var(--primary);border-left:4px solid var(--accent);padding-left:12px;margin-bottom:20px;}
+  h3{font-size:1rem;font-weight:600;color:var(--text);margin:20px 0 8px;}
+  /* flow */
+  .flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:24px 0;}
+  .flow-box{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:14px 20px;text-align:center;min-width:130px;flex:1;}
+  .flow-box .emoji{font-size:1.6rem;display:block;margin-bottom:4px;}
+  .flow-box .label{font-size:.8rem;font-weight:600;color:var(--primary);}
+  .flow-box .sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
+  .flow-arrow{font-size:1.4rem;color:var(--accent);padding:0 6px;flex-shrink:0;}
+  /* table */
+  .schema-table{width:100%;border-collapse:collapse;font-size:.88rem;margin-bottom:24px;}
+  .schema-table th{background:var(--primary);color:#fff;padding:10px 14px;text-align:left;font-weight:600;}
+  .schema-table td{padding:9px 14px;border-bottom:1px solid var(--border);}
+  .schema-table tr:hover td{background:#f0f7f3;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.75rem;font-weight:600;}
+  .b-pk{background:#d8f3dc;color:#1b4332;}
+  .b-fk{background:#dde9ff;color:#1a2e6b;}
+  .b-req{background:#fff3cd;color:#664d03;}
+  .b-opt{background:#f0f0f0;color:#555;}
+  /* erd */
+  .erd{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:20px 0;}
+  .erd-card{background:var(--card);border:2px solid var(--border);border-radius:12px;overflow:hidden;}
+  .erd-card .erd-head{background:var(--primary);color:#fff;padding:10px 16px;font-weight:700;font-size:.95rem;}
+  .erd-card .erd-field{padding:7px 16px;border-bottom:1px solid var(--border);font-size:.82rem;display:flex;justify-content:space-between;align-items:center;}
+  .erd-card .erd-field:last-child{border-bottom:none;}
+  .type{color:var(--muted);font-size:.75rem;}
+  /* data-flow diagram */
+  .pipeline{display:flex;flex-direction:column;gap:0;}
+  .pipe-step{display:flex;align-items:stretch;gap:0;}
+  .pipe-num{width:36px;display:flex;flex-direction:column;align-items:center;}
+  .pipe-circle{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;}
+  .pipe-line{flex:1;width:2px;background:var(--border);margin:0 auto;}
+  .pipe-content{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:0 0 16px 12px;}
+  .pipe-content h4{font-size:.9rem;font-weight:600;color:var(--primary);margin-bottom:4px;}
+  .pipe-content p{font-size:.82rem;color:var(--muted);}
+  /* tag chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+  .chip{padding:4px 12px;border-radius:20px;font-size:.8rem;font-weight:500;background:#e8f5e9;color:var(--primary);border:1px solid var(--accent);}
+  /* footer */
+  footer{text-align:center;padding:24px;font-size:.82rem;color:var(--muted);border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="schema.html" class="logo">🏔️ Korea Outdoor Portal</a>
+  <a href="schema.html" class="active">스키마 설계</a>
+  <a href="courses.html">코스 탐색</a>
+  <a href="dashboard.html">데이터 현황</a>
+</nav>
+
+<div class="hero">
+  <h1>통합 데이터 스키마 설계</h1>
+  <p>CSV · GPX · Shapefile/GeoJSON 데이터를 하나의 구조로 통합하는 Portal 스키마</p>
+</div>
+
+<main>
+
+<!-- 1. 데이터 흐름 -->
+<section>
+  <h2>데이터 수집 → 변환 → Portal 흐름</h2>
+  <div class="flow">
+    <div class="flow-box"><span class="emoji">📄</span><span class="label">원천 데이터</span><span class="sub">CSV · GPX · SHP</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box"><span class="emoji">🔧</span><span class="label">파싱 & 변환</span><span class="sub">Python 스크립트</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box"><span class="emoji">📐</span><span class="label">정규화</span><span class="sub">통합 스키마 적용</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box"><span class="emoji">🗄️</span><span class="label">통합 DB</span><span class="sub">courses / poi / layers</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box"><span class="emoji">🌐</span><span class="label">Portal API</span><span class="sub">REST / GeoJSON</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box"><span class="emoji">🗺️</span><span class="label">사용자 화면</span><span class="sub">지도 · 검색 · 카드</span></div>
+  </div>
+</section>
+
+<!-- 2. ERD -->
+<section>
+  <h2>엔티티 관계도 (ERD)</h2>
+  <div class="erd">
+
+    <div class="erd-card">
+      <div class="erd-head">📋 courses (코스 테이블)</div>
+      <div class="erd-field">course_id <span class="badge b-pk">PK</span></div>
+      <div class="erd-field">course_name <span class="type">string</span></div>
+      <div class="erd-field">category <span class="type">enum</span></div>
+      <div class="erd-field">dataset_name <span class="type">string</span></div>
+      <div class="erd-field">region <span class="type">string</span></div>
+      <div class="erd-field">sub_region <span class="type">string</span></div>
+      <div class="erd-field">distance_km <span class="type">float</span></div>
+      <div class="erd-field">elev_gain_m <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">elev_loss_m <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">difficulty <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">est_time <span class="type">string</span></div>
+      <div class="erd-field">start_lat <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">start_lng <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">start_name <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">end_name <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">address <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">gpx_path <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">geojson_layer_id <span class="badge b-fk">FK</span></div>
+      <div class="erd-field">source_file <span class="type">string</span></div>
+      <div class="erd-field">data_date <span class="type">date</span></div>
+    </div>
+
+    <div class="erd-card">
+      <div class="erd-head">📍 poi (관심 지점 테이블)</div>
+      <div class="erd-field">poi_id <span class="badge b-pk">PK</span></div>
+      <div class="erd-field">course_id <span class="badge b-fk">FK</span></div>
+      <div class="erd-field">poi_type <span class="type">enum</span></div>
+      <div class="erd-field">name <span class="type">string</span></div>
+      <div class="erd-field">lat <span class="badge b-req">필수</span></div>
+      <div class="erd-field">lng <span class="badge b-req">필수</span></div>
+      <div class="erd-field">description <span class="badge b-opt">선택</span></div>
+      <div class="erd-field">properties <span class="type">JSON</span></div>
+      <div class="erd-field" style="margin-top:12px;color:var(--muted);font-size:.78rem;">POI 유형 목록</div>
+      <div class="erd-field" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span class="chip" style="margin:1px;">🅿️ 주차장</span>
+        <span class="chip" style="margin:1px;">🚻 화장실</span>
+        <span class="chip" style="margin:1px;">🏕️ 대피소</span>
+        <span class="chip" style="margin:1px;">🚁 헬기장</span>
+        <span class="chip" style="margin:1px;">🔭 전망대</span>
+        <span class="chip" style="margin:1px;">⛩️ 사찰</span>
+        <span class="chip" style="margin:1px;">💧 폭포·계곡</span>
+        <span class="chip" style="margin:1px;">ℹ️ 안내판</span>
+      </div>
+    </div>
+
+    <div class="erd-card">
+      <div class="erd-head">🗺️ geo_layers (지도 레이어)</div>
+      <div class="erd-field">layer_id <span class="badge b-pk">PK</span></div>
+      <div class="erd-field">name <span class="type">string</span></div>
+      <div class="erd-field">geojson_path <span class="badge b-req">필수</span></div>
+      <div class="erd-field">geometry_type <span class="type">enum</span></div>
+      <div class="erd-field">feature_count <span class="type">int</span></div>
+      <div class="erd-field">original_crs <span class="type">string</span></div>
+      <div class="erd-field">bbox_minx <span class="type">float</span></div>
+      <div class="erd-field">bbox_miny <span class="type">float</span></div>
+      <div class="erd-field">bbox_maxx <span class="type">float</span></div>
+      <div class="erd-field">bbox_maxy <span class="type">float</span></div>
+      <div class="erd-field">source_region <span class="type">string</span></div>
+      <div class="erd-field">data_date <span class="type">date</span></div>
+      <div class="erd-field" style="margin-top:12px;color:var(--muted);font-size:.78rem;">현재 레이어 (22개)</div>
+      <div class="erd-field" style="flex-direction:column;align-items:flex-start;gap:2px;font-size:.75rem;">
+        경기광주 등산로 · 한라산둘레길 · 광양 등산로/둘레길 · 제주 하영올레 外
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 3. 상세 스키마 테이블 -->
+<section>
+  <h2>courses 테이블 — 컬럼 상세</h2>
+  <table class="schema-table">
+    <thead><tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th><th>원천</th></tr></thead>
+    <tbody>
+      <tr><td>course_id</td><td>VARCHAR(36)</td><td><span class="badge b-pk">PK</span></td><td>UUID 자동 생성</td><td>—</td></tr>
+      <tr><td>course_name</td><td>VARCHAR(200)</td><td><span class="badge b-req">NOT NULL</span></td><td>코스/경로명</td><td>CSV · GPX 파일명</td></tr>
+      <tr><td>category</td><td>ENUM</td><td><span class="badge b-req">NOT NULL</span></td><td>등산로·둘레길·숲길·트레킹길·테마길·오름·섬트레킹·문화길·국가숲길·정맥종주</td><td>CSV 카테고리 컬럼</td></tr>
+      <tr><td>dataset_name</td><td>VARCHAR(100)</td><td></td><td>원천 데이터셋 이름 (한국등산트레킹지원센터 등)</td><td>폴더명</td></tr>
+      <tr><td>region</td><td>VARCHAR(50)</td><td></td><td>광역 시도명</td><td>CSV 지역 컬럼</td></tr>
+      <tr><td>sub_region</td><td>VARCHAR(50)</td><td></td><td>시군구명</td><td>CSV</td></tr>
+      <tr><td>distance_km</td><td>DECIMAL(8,2)</td><td></td><td>총 거리(km)</td><td>GPX 계산 / CSV</td></tr>
+      <tr><td>elev_gain_m</td><td>DECIMAL(8,1)</td><td><span class="badge b-opt">NULL OK</span></td><td>누적 상승고도(m)</td><td>GPX 고도 계산</td></tr>
+      <tr><td>elev_loss_m</td><td>DECIMAL(8,1)</td><td><span class="badge b-opt">NULL OK</span></td><td>누적 하강고도(m)</td><td>GPX 고도 계산</td></tr>
+      <tr><td>difficulty</td><td>ENUM('쉬움','보통','어려움')</td><td><span class="badge b-opt">NULL OK</span></td><td>난이도</td><td>CSV 난이도 컬럼</td></tr>
+      <tr><td>est_time</td><td>VARCHAR(20)</td><td></td><td>Naismith 공식 예상 소요시간</td><td>GPX 계산</td></tr>
+      <tr><td>start_lat</td><td>DECIMAL(10,6)</td><td><span class="badge b-opt">NULL OK</span></td><td>시작점 위도</td><td>GPX 첫 포인트 / CSV</td></tr>
+      <tr><td>start_lng</td><td>DECIMAL(10,6)</td><td><span class="badge b-opt">NULL OK</span></td><td>시작점 경도</td><td>GPX 첫 포인트 / CSV</td></tr>
+      <tr><td>start_name</td><td>VARCHAR(100)</td><td><span class="badge b-opt">NULL OK</span></td><td>시작지점 명칭</td><td>CSV 시점 컬럼</td></tr>
+      <tr><td>end_name</td><td>VARCHAR(100)</td><td><span class="badge b-opt">NULL OK</span></td><td>종료지점 명칭</td><td>CSV 종점 컬럼</td></tr>
+      <tr><td>address</td><td>VARCHAR(200)</td><td><span class="badge b-opt">NULL OK</span></td><td>주소 / 소재지</td><td>CSV</td></tr>
+      <tr><td>gpx_path</td><td>VARCHAR(300)</td><td><span class="badge b-opt">NULL OK</span></td><td>GPX 파일 상대 경로</td><td>파일 경로</td></tr>
+      <tr><td>geojson_layer_id</td><td>VARCHAR(36)</td><td><span class="badge b-fk">FK → geo_layers</span></td><td>연결된 GeoJSON 레이어</td><td>Shapefile 변환</td></tr>
+      <tr><td>source_file</td><td>VARCHAR(200)</td><td><span class="badge b-req">NOT NULL</span></td><td>원천 파일명</td><td>파일명</td></tr>
+      <tr><td>data_date</td><td>DATE</td><td></td><td>데이터 기준일</td><td>파일명 날짜 파싱</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 4. category ENUM 정의 -->
+<section>
+  <h2>category ENUM 값 정의</h2>
+  <div class="chips">
+    <span class="chip">🏔️ 등산로</span>
+    <span class="chip">🔄 둘레길</span>
+    <span class="chip">🌲 숲길</span>
+    <span class="chip">🥾 트레킹길</span>
+    <span class="chip">🎭 테마길</span>
+    <span class="chip">🌋 오름</span>
+    <span class="chip">🏝️ 섬트레킹</span>
+    <span class="chip">🏛️ 문화길</span>
+    <span class="chip">🌿 국가숲길</span>
+    <span class="chip">⛰️ 정맥종주</span>
+    <span class="chip">🚴 자전거도로</span>
+  </div>
+</section>
+
+<!-- 5. 데이터 파이프라인 -->
+<section>
+  <h2>데이터 수집 파이프라인</h2>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-num"><div class="pipe-circle">1</div><div class="pipe-line"></div></div>
+      <div class="pipe-content">
+        <h4>원천 수집 — CSV, GPX, Shapefile</h4>
+        <p>공공데이터포털·산림청·한국등산트레킹지원센터에서 다운로드. 인코딩: UTF-8 / CP949 혼재, 좌표계: EPSG:4326 / 5179 / 5186 혼재.</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num"><div class="pipe-circle">2</div><div class="pipe-line"></div></div>
+      <div class="pipe-content">
+        <h4>파싱 & 변환</h4>
+        <p>CSV → pandas 파싱 (CP949 자동 감지). GPX → xml.etree.ElementTree (병렬 16스레드). Shapefile → geopandas → WGS84(EPSG:4326) 재투영 → GeoJSON.</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num"><div class="pipe-circle">3</div><div class="pipe-line"></div></div>
+      <div class="pipe-content">
+        <h4>속성 산출 — GPX 분석</h4>
+        <p>Haversine 공식으로 총 거리 계산. 고도 데이터 있을 경우 누적 상승·하강고도 산출. Naismith 공식(4km/h + 고도 100m당 +30분)으로 예상 소요시간 계산.</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num"><div class="pipe-circle">4</div><div class="pipe-line"></div></div>
+      <div class="pipe-content">
+        <h4>정규화 & 통합</h4>
+        <p>컬럼명 표준화 (한국어 → 스키마 필드명). 카테고리 ENUM 매핑. 지역명 정규화. UUID 부여.</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num"><div class="pipe-circle">5</div><div class="pipe-line"></div></div>
+      <div class="pipe-content">
+        <h4>DB 적재 & API 제공</h4>
+        <p>courses / poi / geo_layers 테이블에 upsert. GeoJSON 파일은 정적 서빙 또는 PostGIS 적재. REST API: GET /courses, GET /courses/{id}/gpx, GET /layers/{id}.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. API 엔드포인트 설계 -->
+<section>
+  <h2>권장 API 엔드포인트</h2>
+  <table class="schema-table">
+    <thead><tr><th>메서드</th><th>엔드포인트</th><th>설명</th><th>주요 파라미터</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td>/api/courses</td><td>코스 목록 (페이징, 필터)</td><td>category, region, min_km, max_km, difficulty, page</td></tr>
+      <tr><td>GET</td><td>/api/courses/{id}</td><td>코스 상세 정보</td><td>—</td></tr>
+      <tr><td>GET</td><td>/api/courses/{id}/gpx</td><td>GPX 파일 다운로드</td><td>—</td></tr>
+      <tr><td>GET</td><td>/api/courses/{id}/poi</td><td>코스 연결 POI 목록</td><td>poi_type</td></tr>
+      <tr><td>GET</td><td>/api/layers</td><td>GeoJSON 레이어 목록</td><td>geometry_type, region</td></tr>
+      <tr><td>GET</td><td>/api/layers/{id}/geojson</td><td>GeoJSON 파일 반환</td><td>—</td></tr>
+      <tr><td>GET</td><td>/api/search</td><td>코스명 전문 검색</td><td>q, category, region</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+<footer>Korea Outdoor Activity Portal — 스키마 버전 1.0 · 2026년 6월</footer>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+"type": "FeatureCollection",
+"name": "광양_헬기장_점",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 1, "MOUNT_NAM": "국사봉등산로3코스", "MOUNT_ID": 10, "BJD_CDE": "4623025029", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.643835732580641, 34.999146740595826 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 2, "MOUNT_NAM": "백운산둘레길6코스", "MOUNT_ID": 102, "BJD_CDE": "4623034024", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.646367086715216, 35.044052701164368 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 3, "MOUNT_NAM": "백운산등산로4코스", "MOUNT_ID": 5, "BJD_CDE": "4623032024", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.628369235189155, 35.067944582439559 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 4, "MOUNT_NAM": "백운산등산로4코스", "MOUNT_ID": 5, "BJD_CDE": "4623032024", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.621788645460995, 35.098775581767889 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 5, "MOUNT_NAM": "백운산등산로3코스", "MOUNT_ID": 6, "BJD_CDE": "4623032024", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.62252579658265, 35.103111089631128 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 6, "MOUNT_NAM": "백운산등산로5코스", "MOUNT_ID": 4, "BJD_CDE": "4673000000", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.583640524577049, 35.118767237090054 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 7, "MOUNT_NAM": "백운산등산로5코스", "MOUNT_ID": 4, "BJD_CDE": "4623031026", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.576600563674873, 35.113510769573409 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 8, "MOUNT_NAM": "백운산등산로8코스", "MOUNT_ID": 1, "BJD_CDE": "4623036024", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.652048055743876, 35.117252901673332 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 9, "MOUNT_NAM": "백운산등산로8코스", "MOUNT_ID": 1, "BJD_CDE": "4623036023", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.671758241438354, 35.105394947593219 ] } },
+{ "type": "Feature", "properties": { "FTR_CDE": "MT106", "FTR_IDN": 10, "MOUNT_NAM": "백운산등산로4코스", "MOUNT_ID": 5, "BJD_CDE": "4623034025", "HEL_CDE": "HEL999", "HEL_NM": "", "INS_USR": "", "INS_YMD": "", "MOD_USR": "", "MOD_YMD": "" }, "geometry": { "type": "Point", "coordinates": [ 127.648757205736331, 35.074036766632965 ] } }
+]
+}
