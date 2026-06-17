@@ -99,6 +99,54 @@ export async function GET() {
     })();
 
     var map, courses = [], activeOverlay = null, currentMarkers = [], clusterer = null;
+    var activePolyline = null;   // 현재 표시 중인 경로
+    var routeLoadingEl = null;   // 로딩 표시
+
+    // ── 경로 로딩 표시 ──
+    function showRouteLoading(show) {
+      if (!routeLoadingEl) {
+        routeLoadingEl = document.createElement('div');
+        routeLoadingEl.style.cssText = 'position:absolute;bottom:56px;right:16px;z-index:15;'
+          + 'background:rgba(15,23,42,0.9);border:1px solid rgba(16,185,129,0.4);'
+          + 'border-radius:8px;padding:6px 12px;font-family:sans-serif;font-size:11px;color:#10b981;';
+        routeLoadingEl.textContent = '경로 불러오는 중…';
+        document.body.appendChild(routeLoadingEl);
+      }
+      routeLoadingEl.style.display = show ? 'block' : 'none';
+    }
+
+    // ── 폴리라인 제거 ──
+    function clearPolyline() {
+      if (activePolyline) { activePolyline.setMap(null); activePolyline = null; }
+    }
+
+    // ── GPX 경로 fetch & 폴리라인 그리기 ──
+    function drawRoute(courseId, color) {
+      clearPolyline();
+      showRouteLoading(true);
+      fetch('/api/gpx-route?id=' + courseId)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          showRouteLoading(false);
+          if (!data.coords || data.coords.length === 0) return;
+          var path = data.coords.map(function(c) {
+            return new kakao.maps.LatLng(c[0], c[1]);
+          });
+          activePolyline = new kakao.maps.Polyline({
+            map: map,
+            path: path,
+            strokeWeight: 4,
+            strokeColor: color,
+            strokeOpacity: 0.85,
+            strokeStyle: 'solid',
+          });
+          // 경로 전체가 보이도록 범위 맞추기
+          var bounds = new kakao.maps.LatLngBounds();
+          path.forEach(function(p) { bounds.extend(p); });
+          map.setBounds(bounds, 40);
+        })
+        .catch(function() { showRouteLoading(false); });
+    }
 
     function initMap() {
       if (typeof kakao === 'undefined' || !kakao.maps) { setTimeout(initMap, 100); return; }
@@ -181,39 +229,49 @@ export async function GET() {
         );
         var marker = new kakao.maps.Marker({ position: pos, image: img });
 
-        kakao.maps.event.addListener(marker, 'click', function() {
-          if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
+        kakao.maps.event.addListener(marker, 'click', (function(c, p, m) {
+          return function() {
+            if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
 
-          var distHtml = course.distance_km
-            ? '<span style="color:#3b82f6">↔ ' + Number(course.distance_km).toFixed(1) + 'km</span>' : '';
-          var elevHtml = course.elev_gain_m
-            ? '<span style="color:#f97316">↑ ' + Math.round(course.elev_gain_m) + 'm</span>' : '';
-          var timeHtml = course.est_time
-            ? '<span style="color:#10b981">⏱ ' + course.est_time + '</span>' : '';
+            var distHtml = c.distance_km
+              ? '<span style="color:#3b82f6">↔ ' + Number(c.distance_km).toFixed(1) + 'km</span>' : '';
+            var elevHtml = c.elev_gain_m
+              ? '<span style="color:#f97316">↑ ' + Math.round(c.elev_gain_m) + 'm</span>' : '';
+            var timeHtml = c.est_time
+              ? '<span style="color:#10b981">⏱ ' + c.est_time + '</span>' : '';
+            var isGpx = c.source === 'GPX';
+            var routeBtn = isGpx
+              ? '<button onclick="drawRoute(' + c.id + ',\'' + m.color + '\')" '
+                + 'style="margin-top:8px;width:100%;padding:5px 0;border-radius:8px;border:none;cursor:pointer;'
+                + 'background:' + m.color + ';color:#fff;font-size:11px;font-weight:700;font-family:sans-serif;">'
+                + '🗺 전체 경로 보기</button>'
+              : '';
 
-          var div = document.createElement('div');
-          div.style.cssText = 'background:#0f172a;border:2px solid ' + meta.color
-            + ';border-radius:12px;padding:12px 14px;min-width:220px;max-width:260px;'
-            + 'font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.7);position:relative;bottom:12px;';
-          div.innerHTML =
-            '<button onclick="closeOverlay()" style="position:absolute;top:6px;right:10px;'
-            + 'background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;line-height:1">✕</button>'
-            + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-            + '<div style="width:10px;height:10px;border-radius:50%;background:' + meta.color + ';flex-shrink:0"></div>'
-            + '<span style="font-size:12px;font-weight:800;color:#f1f5f9;word-break:keep-all">' + course.course_name + '</span></div>'
-            + '<p style="margin:0 0 6px;font-size:10px;color:#64748b">📁 ' + (course.dataset_name || '') + '</p>'
-            + '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px">'
-            + distHtml + elevHtml + timeHtml + '</div>'
-            + (course.difficulty ? '<p style="margin:4px 0 0;font-size:10px;color:#94a3b8">💪 난이도: ' + course.difficulty + '</p>' : '')
-            + '<div style="margin-top:8px;display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;'
-            + 'background:' + meta.color + '33;color:' + meta.color + ';border:1px solid ' + meta.color + '55">'
-            + cat + '</div>';
+            var div = document.createElement('div');
+            div.style.cssText = 'background:#0f172a;border:2px solid ' + m.color
+              + ';border-radius:12px;padding:12px 14px;min-width:220px;max-width:260px;'
+              + 'font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.7);position:relative;bottom:12px;';
+            div.innerHTML =
+              '<button onclick="closeOverlay()" style="position:absolute;top:6px;right:10px;'
+              + 'background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;line-height:1">✕</button>'
+              + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+              + '<div style="width:10px;height:10px;border-radius:50%;background:' + m.color + ';flex-shrink:0"></div>'
+              + '<span style="font-size:12px;font-weight:800;color:#f1f5f9;word-break:keep-all">' + c.course_name + '</span></div>'
+              + '<p style="margin:0 0 6px;font-size:10px;color:#64748b">📁 ' + (c.dataset_name || '') + '</p>'
+              + '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px">'
+              + distHtml + elevHtml + timeHtml + '</div>'
+              + (c.difficulty ? '<p style="margin:4px 0 0;font-size:10px;color:#94a3b8">💪 난이도: ' + c.difficulty + '</p>' : '')
+              + '<div style="margin-top:8px;display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;'
+              + 'background:' + m.color + '33;color:' + m.color + ';border:1px solid ' + m.color + '55">'
+              + (c.category||'').trim() + '</div>'
+              + routeBtn;
 
-          activeOverlay = new kakao.maps.CustomOverlay({ position: pos, content: div, yAnchor: 1.3 });
-          activeOverlay.setMap(map);
-          map.panTo(pos);
-          window.parent.postMessage({ type: 'COURSE_MARKER_CLICK', id: course.id }, '*');
-        });
+            activeOverlay = new kakao.maps.CustomOverlay({ position: p, content: div, yAnchor: 1.3 });
+            activeOverlay.setMap(map);
+            map.panTo(p);
+            window.parent.postMessage({ type: 'COURSE_MARKER_CLICK', id: c.id }, '*');
+          };
+        })(course, pos, meta));
 
         currentMarkers.push(marker);
       });
@@ -255,6 +313,7 @@ export async function GET() {
 
     function closeOverlay() {
       if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
+      clearPolyline();
     }
 
     function resetMap() {
