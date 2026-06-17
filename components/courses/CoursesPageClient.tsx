@@ -2,10 +2,14 @@
 // components/courses/CoursesPageClient.tsx — 코스 탐색 클라이언트 UI
 
 import { useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import type { RawCourseRow, RawCourseFilters } from '@/types/rawCourse';
 import { RAW_CATEGORY_META } from '@/types/rawCourse';
+
+// 지도 뷰 — SSR 비활성화 (카카오맵은 브라우저 전용)
+const CourseMapView = dynamic(() => import('./CourseMapView'), { ssr: false });
 
 const PAGE_SIZE = 50;
 
@@ -84,6 +88,7 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
   const [region,   setRegion]   = useState(initialFilters.region   ?? '전체');
   const [source,   setSource]   = useState<string>(initialFilters.source   ?? '전체');
   const [sortBy,   setSortBy]   = useState<SortKey>('course_name');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -238,24 +243,54 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
               <span className="text-emerald-400 font-bold">{totalCount.toLocaleString()}</span>개 코스 ·
               <span className="text-slate-500"> 페이지 {initialPage + 1} / {Math.max(1, totalPages)}</span>
             </p>
-            {isPending && <span className="text-xs text-emerald-400 animate-pulse">로딩 중…</span>}
+            <div className="flex items-center gap-2">
+              {isPending && <span className="text-xs text-emerald-400 animate-pulse">로딩 중…</span>}
+              {/* 지도/목록 토글 */}
+              <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                <button onClick={() => setViewMode('list')}
+                  className={`px-3 py-1.5 text-xs font-semibold transition ${
+                    viewMode === 'list' ? 'bg-emerald-700 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}>
+                  ☰ 목록
+                </button>
+                <button onClick={() => setViewMode('map')}
+                  className={`px-3 py-1.5 text-xs font-semibold transition ${
+                    viewMode === 'map' ? 'bg-emerald-700 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}>
+                  🗺 지도
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* 코스 그리드 */}
-          {sorted.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-slate-600">
-              <span className="text-5xl mb-4">🔍</span>
-              <p className="text-lg font-semibold">검색 결과가 없습니다</p>
-              <p className="text-sm mt-1">필터를 조정해 보세요</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {sorted.map((course) => <CourseCard key={course.id} course={course} />)}
+          {/* 지도 뷰 */}
+          {viewMode === 'map' && (
+            <div className="rounded-xl overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+              <CourseMapView
+                courses={sorted}
+                filterCategory={category}
+                filterSource={source}
+              />
             </div>
           )}
 
-          {/* 페이지네이션 */}
-          {totalPages > 1 && (
+          {/* 코스 그리드 (목록 모드) */}
+          {viewMode === 'list' && (
+            sorted.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-slate-600">
+                <span className="text-5xl mb-4">🔍</span>
+                <p className="text-lg font-semibold">검색 결과가 없습니다</p>
+                <p className="text-sm mt-1">필터를 조정해 보세요</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {sorted.map((course) => <CourseCard key={course.id} course={course} />)}
+              </div>
+            )
+          )}
+
+          {/* 페이지네이션 (목록 모드에서만) */}
+          {viewMode === 'list' && totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8">
               <button onClick={() => goPage(0)} disabled={initialPage === 0}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-emerald-300 disabled:opacity-30 disabled:cursor-not-allowed border border-white/8 hover:border-emerald-700 transition">
