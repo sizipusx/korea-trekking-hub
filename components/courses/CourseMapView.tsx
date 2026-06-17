@@ -30,7 +30,16 @@ export default function CourseMapView({ courses, filterCategory, filterSource }:
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // 필터 변경 → 지도에 전달
+  // courses 데이터 변경 → 지도 전체 재초기화
+  useEffect(() => {
+    if (!ready) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'INIT_COURSES', courses }, '*'
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courses, ready]);
+
+  // 필터 변경 → 지도에 전달 (클라이언트 사이드 즉시 필터)
   useEffect(() => {
     if (!ready) return;
     iframeRef.current?.contentWindow?.postMessage(

@@ -1,7 +1,7 @@
 'use client';
 // components/courses/CoursesPageClient.tsx — 코스 탐색 클라이언트 UI
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect, useCallback, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
@@ -90,6 +90,45 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
   const [sortBy,   setSortBy]   = useState<SortKey>('course_name');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
+  // 지도 전용 상태 — 전체 좌표 데이터
+  const [mapCourses,  setMapCourses]  = useState<RawCourseRow[] | null>(null);
+  const [mapLoading,  setMapLoading]  = useState(false);
+  const [mapError,    setMapError]    = useState<string | null>(null);
+  // 마지막으로 fetch한 필터를 저장해 중복 요청 방지
+  const lastMapKey = useRef<string>('');
+
+  const fetchMapCourses = useCallback(async (cat: string, src: string, reg: string, srch: string) => {
+    const key = `${cat}|${src}|${reg}|${srch}`;
+    if (key === lastMapKey.current) return;
+    lastMapKey.current = key;
+
+    setMapLoading(true);
+    setMapError(null);
+    try {
+      const params = new URLSearchParams();
+      if (cat  && cat  !== '전체') params.set('category', cat);
+      if (src  && src  !== '전체') params.set('source',   src);
+      if (reg  && reg  !== '전체') params.set('region',   reg);
+      if (srch)                    params.set('search',   srch);
+      const res = await fetch(`/api/courses-map?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: RawCourseRow[] = await res.json();
+      setMapCourses(data);
+    } catch (err) {
+      setMapError(err instanceof Error ? err.message : '데이터 로드 실패');
+    } finally {
+      setMapLoading(false);
+    }
+  }, []);
+
+  // 지도 모드 진입 시 또는 필터 변경 시 재조회
+  useEffect(() => {
+    if (viewMode === 'map') {
+      fetchMapCourses(category, source, region, search);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode]);
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   function buildUrl(overrides: Record<string, string | number | undefined>) {
@@ -110,6 +149,11 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
 
   function applyFilters() {
     startTransition(() => router.push(buildUrl({ page: 0 })));
+    // 지도 모드에서는 즉시 재조회 (URL 전환과 무관하게)
+    if (viewMode === 'map') {
+      lastMapKey.current = ''; // 강제 재fetch
+      fetchMapCourses(category, source, region, search);
+    }
   }
 
   function goPage(p: number) {
@@ -117,12 +161,15 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
   }
 
   // 클라이언트 사이드 정렬
-  const sorted = [...initialData].sort((a, b) => {
+  const sorted = useMemo(() => [...initialData].sort((a, b) => {
     if (sortBy === 'distance_km') return (b.distance_km ?? -1) - (a.distance_km ?? -1);
     if (sortBy === 'elev_gain_m') return (b.elev_gain_m ?? -1) - (a.elev_gain_m ?? -1);
     if (sortBy === 'dataset_name') return a.dataset_name.localeCompare(b.dataset_name);
     return a.course_name.localeCompare(b.course_name);
-  });
+  }), [initialData, sortBy]);
+
+  // 지도에 넘길 코스 (전체 조회된 데이터 우선, 없으면 현재 페이지 데이터)
+  const coursesForMap = useMemo(() => mapCourses ?? sorted, [mapCourses, sorted]);
 
   const gradBg = 'linear-gradient(160deg,#0a0f1e 0%,#0d1f12 50%,#0f1a2e 100%)';
 
@@ -265,9 +312,24 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
 
           {/* 지도 뷰 */}
           {viewMode === 'map' && (
-            <div className="rounded-xl overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+            <div className="rounded-xl overflow-hidden relative" style={{ height: 'calc(100vh - 200px)' }}>
+              {mapLoading && (
+                <div className="absolute inset-0 z-20 bg-slate-900/80 flex flex-col items-center justify-center rounded-xl">
+                  <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
+                  <p className="text-sm text-emerald-400">전체 코스 로딩 중…</p>
+                </div>
+              )}
+              {mapError && (
+                <div className="absolute inset-0 z-20 bg-slate-900/90 flex flex-col items-center justify-center rounded-xl">
+                  <p className="text-red-400 text-sm">⚠️ {mapError}</p>
+                  <button onClick={() => { lastMapKey.current = ''; fetchMapCourses(category, source, region, search); }}
+                    className="mt-3 px-4 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-semibold">
+                    다시 시도
+                  </button>
+                </div>
+              )}
               <CourseMapView
-                courses={sorted}
+                courses={coursesForMap}
                 filterCategory={category}
                 filterSource={source}
               />
