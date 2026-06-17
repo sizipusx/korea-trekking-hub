@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 async function fetchKakaoSDK(appkey: string): Promise<string> {
   try {
     const res = await fetch(
-      `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appkey}&autoload=false&libraries=clusterer`,
+      `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appkey}&autoload=false`,
       { cache: 'force-cache' }
     );
     return await res.text();
@@ -71,7 +71,7 @@ export async function GET() {
       '국가숲길':'🌿','정맥종주':'⛰','종주':'🗻','기타':'📍'
     };
 
-    let map, clusterer, courses = [], activeOverlay = null, currentMarkers = [];
+    let map, courses = [], activeOverlay = null, currentMarkers = [];
 
     function initMap() {
       if (typeof kakao === 'undefined' || !kakao.maps) { setTimeout(initMap, 100); return; }
@@ -80,35 +80,6 @@ export async function GET() {
         map = new kakao.maps.Map(document.getElementById('map'), {
           center: new kakao.maps.LatLng(36.5, 127.8),
           level: 12
-        });
-
-        clusterer = new kakao.maps.MarkerClusterer({
-          map: map,
-          averageCenter: true,
-          minLevel: 8,
-          disableClickZoom: false,
-          styles: [{
-            width:'50px', height:'50px',
-            background:'rgba(16,185,129,0.85)',
-            borderRadius:'50%', color:'#fff',
-            textAlign:'center', lineHeight:'50px',
-            fontSize:'14px', fontWeight:'bold',
-            fontFamily:'sans-serif', border:'3px solid rgba(255,255,255,0.3)'
-          },{
-            width:'60px', height:'60px',
-            background:'rgba(245,158,11,0.85)',
-            borderRadius:'50%', color:'#fff',
-            textAlign:'center', lineHeight:'60px',
-            fontSize:'14px', fontWeight:'bold',
-            fontFamily:'sans-serif', border:'3px solid rgba(255,255,255,0.3)'
-          },{
-            width:'70px', height:'70px',
-            background:'rgba(239,68,68,0.85)',
-            borderRadius:'50%', color:'#fff',
-            textAlign:'center', lineHeight:'70px',
-            fontSize:'15px', fontWeight:'bold',
-            fontFamily:'sans-serif', border:'3px solid rgba(255,255,255,0.3)'
-          }]
         });
 
         window.addEventListener('message', function(e) {
@@ -149,11 +120,19 @@ export async function GET() {
 
     function renderMarkers(list) {
       if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
-      clusterer.clear();
+      // 기존 마커 제거
+      currentMarkers.forEach(function(m){ m.setMap(null); });
       currentMarkers = [];
 
       var withCoords = list.filter(function(c){ return c.start_lat && c.start_lng; });
       document.getElementById('cnt').textContent = withCoords.length.toLocaleString();
+
+      // 좌표가 있는 첫 번째 코스로 지도 이동
+      if (withCoords.length > 0) {
+        var bounds = new kakao.maps.LatLngBounds();
+        withCoords.forEach(function(c){ bounds.extend(new kakao.maps.LatLng(c.start_lat, c.start_lng)); });
+        map.setBounds(bounds, 50);
+      }
 
       withCoords.forEach(function(course) {
         var color = CAT_COLORS[course.category] || '#10b981';
@@ -198,10 +177,9 @@ export async function GET() {
           window.parent.postMessage({ type: 'COURSE_MARKER_CLICK', id: course.id }, '*');
         });
 
+        marker.setMap(map);
         currentMarkers.push(marker);
       });
-
-      clusterer.addMarkers(currentMarkers);
     }
 
     function closeOverlay() {
