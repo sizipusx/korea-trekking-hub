@@ -61,7 +61,7 @@ export async function getRawCourses(
     return { data: [], count: 0 };
   }
 
-  return { data: (data ?? []) as RawCourseRow[], count: count ?? 0 };
+  return { data: (data ?? []) as unknown as RawCourseRow[], count: count ?? 0 };
 }
 
 // ── 단일 조회 ──────────────────────────────────
@@ -78,7 +78,7 @@ export async function getRawCourseById(id: number): Promise<RawCourseRow | null>
     .single();
 
   if (error) return null;
-  return data as RawCourseRow;
+  return data as unknown as RawCourseRow;
 }
 
 // ── 통계 ───────────────────────────────────────
