@@ -25,11 +25,103 @@ const REGIONS = [
 
 type SortKey = 'course_name' | 'distance_km' | 'elev_gain_m' | 'dataset_name';
 
-// ── 카드 컴포넌트 ─────────────────────────────────────────────────
-function CourseCard({ course }: { course: RawCourseRow }) {
+// ── GPX 경로 팝업 모달 ────────────────────────────────────────────
+function CourseRouteModal({ course, onClose }: { course: RawCourseRow; onClose: () => void }) {
+  const hasGpx = course.source === 'GPX';
   const meta = RAW_CATEGORY_META[course.category] ?? { emoji: '📍', color: '#64748b' };
+
+  // ESC 키로 닫기
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   return (
-    <div className="rounded-xl border border-white/8 bg-white/[0.025] p-4 hover:border-emerald-700/60 hover:bg-white/[0.04] transition-all group">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', maxHeight: '90vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'linear-gradient(90deg,#052e16,#064e3b)' }}>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-2xl shrink-0">{meta.emoji}</span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-emerald-50 truncate">{course.course_name}</h2>
+              <p className="text-[11px] text-emerald-400 mt-0.5">
+                {course.dataset_name}
+                {course.region ? ` · ${course.region}` : ''}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-3">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: `${meta.color}22`, color: meta.color, border: `1px solid ${meta.color}44` }}>
+              {course.category}
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${hasGpx ? 'text-purple-300 bg-purple-900/30 border border-purple-700/40' : 'text-cyan-300 bg-cyan-900/30 border border-cyan-700/40'}`}>
+              {hasGpx ? '🛰 GPX' : '📄 CSV'}
+            </span>
+            <button onClick={onClose}
+              className="ml-1 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition text-lg leading-none">
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* 통계 바 */}
+        <div className="flex gap-6 px-5 py-3 text-[11px]" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+          {course.distance_km != null && (
+            <span className="text-blue-400">↔️ <strong>{course.distance_km.toFixed(1)}</strong> km</span>
+          )}
+          {course.elev_gain_m != null && (
+            <span className="text-orange-400">↑ <strong>{Math.round(course.elev_gain_m)}</strong> m</span>
+          )}
+          {course.est_time && (
+            <span className="text-slate-400">⏱ {course.est_time}</span>
+          )}
+          {course.difficulty && (
+            <span className="text-slate-400">💪 {course.difficulty}</span>
+          )}
+        </div>
+
+        {/* 지도 영역 */}
+        <div style={{ height: '480px' }}>
+          {hasGpx ? (
+            <iframe
+              src={`/api/kakaomap-route?id=${course.id}`}
+              className="w-full h-full border-0"
+              title={`${course.course_name} 경로`}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-3">
+              <span className="text-5xl">📄</span>
+              <p className="text-sm font-semibold text-slate-400">CSV 데이터 코스</p>
+              <p className="text-xs text-slate-600">GPX 경로 파일이 없어 지도를 표시할 수 없습니다</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 카드 컴포넌트 ─────────────────────────────────────────────────
+function CourseCard({ course, onClick }: { course: RawCourseRow; onClick: () => void }) {
+  const meta = RAW_CATEGORY_META[course.category] ?? { emoji: '📍', color: '#64748b' };
+  const hasGpx = course.source === 'GPX';
+  return (
+    <div
+      className="rounded-xl border border-white/8 bg-white/[0.025] p-4 hover:border-emerald-700/60 hover:bg-white/[0.04] transition-all group cursor-pointer"
+      onClick={onClick}
+    >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="text-xl shrink-0">{meta.emoji}</span>
@@ -62,9 +154,12 @@ function CourseCard({ course }: { course: RawCourseRow }) {
         {course.difficulty && (
           <span>💪 {course.difficulty}</span>
         )}
-        <span className={course.source === 'GPX' ? 'text-purple-400' : 'text-cyan-400'}>
-          {course.source === 'GPX' ? '🛰 GPX' : '📄 CSV'}
+        <span className={hasGpx ? 'text-purple-400' : 'text-cyan-400'}>
+          {hasGpx ? '🛰 GPX' : '📄 CSV'}
         </span>
+        {hasGpx && (
+          <span className="text-emerald-500 group-hover:text-emerald-400 transition-colors">🗺 경로 보기</span>
+        )}
       </div>
     </div>
   );
@@ -89,6 +184,7 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
   const [source,   setSource]   = useState<string>(initialFilters.source   ?? '전체');
   const [sortBy,   setSortBy]   = useState<SortKey>('course_name');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [selectedCourse, setSelectedCourse] = useState<RawCourseRow | null>(null);
 
   // 지도 전용 상태 — 전체 좌표 데이터
   const [mapCourses,  setMapCourses]  = useState<RawCourseRow[] | null>(null);
@@ -175,6 +271,14 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
 
   return (
     <div className="min-h-screen" style={{ background: gradBg }}>
+
+      {/* GPX 경로 팝업 모달 */}
+      {selectedCourse && (
+        <CourseRouteModal
+          course={selectedCourse}
+          onClose={() => setSelectedCourse(null)}
+        />
+      )}
 
       {/* HEADER */}
       <header style={{ background: 'linear-gradient(90deg,#052e16,#064e3b,#0c4a6e)', borderBottom: '2px solid #10b981' }}
@@ -346,7 +450,13 @@ export default function CoursesPageClient({ initialData, totalCount, initialPage
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {sorted.map((course) => <CourseCard key={course.id} course={course} />)}
+                {sorted.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    onClick={() => setSelectedCourse(course)}
+                  />
+                ))}
               </div>
             )
           )}
