@@ -241,7 +241,7 @@ export async function GET() {
               ? '<span style="color:#10b981">⏱ ' + c.est_time + '</span>' : '';
             var isGpx = c.source === 'GPX';
             var routeBtn = isGpx
-              ? '<button onclick="drawRoute(' + c.id + ',\'' + m.color + '\')" '
+              ? '<button onclick="drawRoute(' + c.id + ',\\u0027' + m.color + '\\u0027)" '
                 + 'style="margin-top:8px;width:100%;padding:5px 0;border-radius:8px;border:none;cursor:pointer;'
                 + 'background:' + m.color + ';color:#fff;font-size:11px;font-weight:700;font-family:sans-serif;">'
                 + '🗺 전체 경로 보기</button>'
