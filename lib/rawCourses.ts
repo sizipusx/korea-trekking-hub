@@ -11,9 +11,15 @@ export async function getRawCourses(
 ): Promise<{ data: RawCourseRow[]; count: number }> {
   const supabase = await createClient();
 
+  // gpx_coords 는 경로 팝업에서 /api/gpx-route 로 별도 조회 → 목록에서 제외 (전송 데이터 절감)
   let query = supabase
     .from('raw_courses')
-    .select('*', { count: 'exact' })
+    .select(
+      'id, course_name, category, dataset_name, subcategory, region,' +
+      'distance_km, elev_gain_m, elev_loss_m, est_time, difficulty,' +
+      'start_lat, start_lng, address, gpx_path, source, created_at',
+      { count: 'exact' }
+    )
     .order('dataset_name')
     .order('course_name')
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -63,7 +69,11 @@ export async function getRawCourseById(id: number): Promise<RawCourseRow | null>
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('raw_courses')
-    .select('*')
+    .select(
+      'id, course_name, category, dataset_name, subcategory, region,' +
+      'distance_km, elev_gain_m, elev_loss_m, est_time, difficulty,' +
+      'start_lat, start_lng, address, gpx_path, source, created_at'
+    )
     .eq('id', id)
     .single();
 
