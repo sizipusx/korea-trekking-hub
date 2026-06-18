@@ -157,6 +157,11 @@ export async function GET() {
           level: 12
         });
 
+        // 스카이뷰 / 일반지도 전환 컨트롤
+        map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
+        // 확대/축소 컨트롤
+        map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+
         window.addEventListener('message', function(e) {
           if (!e.data) return;
           if (e.data.type === 'INIT_COURSES') {
