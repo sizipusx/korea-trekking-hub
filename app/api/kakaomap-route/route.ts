@@ -122,6 +122,10 @@ export async function GET(req: NextRequest) {
           level: 6,
         });
 
+        // 지도/스카이뷰 전환 컨트롤 + 줌 컨트롤
+        map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
+        map.addControl(new kakao.maps.ZoomControl(),    kakao.maps.ControlPosition.RIGHT);
+
         // 폴리라인 그리기
         const path = coords.map(([lat, lng]) => new kakao.maps.LatLng(lat, lng));
         const polyline = new kakao.maps.Polyline({
