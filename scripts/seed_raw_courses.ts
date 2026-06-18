@@ -39,12 +39,13 @@ const CSV_XLSX    = path.join(DATA_DIR, '트레킹_코스_통합데이터.xlsx')
 const BATCH_SIZE  = 500;
 
 // ── 카테고리 추론 헬퍼 ──────────────────────────────────────────
+// ※ 주의: 긴 키워드(국가숲길)가 짧은 키워드(숲길)보다 반드시 앞에 위치해야 함
 const CATEGORY_MAP: Record<string, string> = {
+  '국가숲길': '국가숲길',   // '숲길' 보다 먼저 체크
   '등산':     '등산로',
   '산':       '등산로',
   '둘레':     '둘레길',
   '숲길':     '숲길',
-  '국가숲길': '국가숲길',
   '트레킹':   '트레킹길',
   '테마':     '테마길',
   '오름':     '오름',
@@ -110,7 +111,8 @@ function loadGpxData(): GpxRow[] {
 
   return rows.map((r) => {
     const datasetName = String(r['데이터셋'] ?? r['dataset'] ?? '');
-    const distKm      = typeof r['거리(km)'] === 'number' ? r['거리(km)'] : null;
+    const distKm      = typeof r['총거리(km)'] === 'number' ? r['총거리(km)']
+                      : typeof r['거리(km)']  === 'number' ? r['거리(km)']  : null;
     const elevGain    = typeof r['누적상승(m)'] === 'number' ? r['누적상승(m)'] : null;
     const elevLoss    = typeof r['누적하강(m)'] === 'number' ? r['누적하강(m)'] : null;
     const startLat    = typeof r['시작위도'] === 'number' ? r['시작위도'] : null;
@@ -163,14 +165,16 @@ function loadCsvData(): CsvRow[] {
   }
 
   const wb = XLSX.readFile(CSV_XLSX);
-  // 통합요약 시트 사용 (없으면 첫 번째 시트)
-  const sheetName = wb.SheetNames.includes('통합요약') ? '통합요약' : wb.SheetNames[0];
+  // 통합요약 시트 사용 — 실제 시트명은 '【통합요약】' (괄호 포함)
+  const SUMMARY_SHEET = '【통합요약】';
+  const sheetName = wb.SheetNames.includes(SUMMARY_SHEET) ? SUMMARY_SHEET : wb.SheetNames[0];
   const ws = wb.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
   console.log(`📂  CSV 원천 데이터: ${rows.length}행 (시트: ${sheetName})`);
 
   return rows.map((r) => {
-    const datasetName = String(r['데이터셋'] ?? r['출처'] ?? '');
+    // 통합요약 시트의 데이터셋 컬럼명은 '파일출처'
+    const datasetName = String(r['파일출처'] ?? r['데이터셋'] ?? r['출처'] ?? '');
     const distRaw     = r['거리(km)'] ?? r['거리_km'] ?? r['총 거리(km)'];
     const distKm      = typeof distRaw === 'number' ? distRaw :
                         (distRaw ? parseFloat(String(distRaw)) : null);

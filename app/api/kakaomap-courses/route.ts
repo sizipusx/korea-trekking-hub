@@ -197,7 +197,7 @@ export async function GET() {
         // 이니셜 텍스트
         + '<text x="14" y="17.5" text-anchor="middle" dominant-baseline="middle"'
         + ' font-size="9" font-weight="900" fill="white"'
-        + ' font-family=\'Apple SD Gothic Neo,Malgun Gothic,sans-serif\'>' + enc + '</text>'
+        + " font-family='Apple SD Gothic Neo,Malgun Gothic,sans-serif'>" + enc + '</text>'
         + '</svg>';
     }
 
