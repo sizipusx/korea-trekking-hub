@@ -80,7 +80,12 @@ async function main() {
     for (const course of batch) {
       if (!course.gpx_path) { skipped++; continue; }
 
-      const absPath = path.join(process.cwd(), course.gpx_path);
+      // gpx_path 는 DB에 'csv_data/' 없이 저장되어 있으므로 먼저 prefix 추가 경로를 시도
+      const absPath =
+        existsSync(path.join(process.cwd(), 'csv_data', course.gpx_path))
+          ? path.join(process.cwd(), 'csv_data', course.gpx_path)
+          : path.join(process.cwd(), course.gpx_path);
+
       if (!existsSync(absPath)) {
         console.warn(`  ⚠️  파일 없음 (id=${course.id}): ${course.gpx_path}`);
         failed++;
