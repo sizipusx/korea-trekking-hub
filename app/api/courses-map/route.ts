@@ -39,7 +39,8 @@ export async function GET(req: NextRequest) {
   }
 
   // 전체 데이터 페이지네이션
-  const allData: Record<string, unknown>[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allData: any[] = [];
   let offset = 0;
 
   while (true) {
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!data || data.length === 0) break;
-    allData.push(...data);
+    allData.push(...(data as any[]));
     if (data.length < BATCH) break; // 마지막 페이지
     offset += BATCH;
   }
