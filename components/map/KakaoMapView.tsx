@@ -3,28 +3,37 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Trail } from '@/types/trail';
 import type { ForestRow } from '@/types/forest';
+import type { CampRow } from '@/types/camp';
 
 interface Props {
   trails: Trail[];
   forests: ForestRow[];
+  camps: CampRow[];
+  updatedCamp: CampRow | null;   // 예약 정보 저장 직후, 지도 팝업에도 반영하기 위한 값
   selectedId: string | null;
   filterCategory: string;
   forestFilterCategory: string;
+  campFilterCategory: string;
   showForests: boolean;
+  showCamps: boolean;
   onMarkerClick: (trail: Trail) => void;
   onForestClick: (forest: ForestRow) => void;
+  onCampClick: (camp: CampRow) => void;
 }
 
 export default function KakaoMapView({
-  trails, forests, selectedId, filterCategory,
-  forestFilterCategory, showForests, onMarkerClick, onForestClick,
+  trails, forests, camps, updatedCamp, selectedId, filterCategory,
+  forestFilterCategory, campFilterCategory, showForests, showCamps,
+  onMarkerClick, onForestClick, onCampClick,
 }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(true);
   const trailsRef = useRef(trails);
   const forestsRef = useRef(forests);
+  const campsRef = useRef(camps);
   trailsRef.current = trails;
   forestsRef.current = forests;
+  campsRef.current = camps;
 
   // MAP_READY 수신 핸들러
   useEffect(() => {
@@ -37,6 +46,9 @@ export default function KakaoMapView({
         iframeRef.current?.contentWindow?.postMessage(
           { type: 'INIT_FORESTS', forests: forestsRef.current }, '*'
         );
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: 'INIT_CAMPS', camps: campsRef.current }, '*'
+        );
       }
       if (e.data?.type === 'MARKER_CLICK') {
         const trail = trailsRef.current.find(t => t.id === e.data.id);
@@ -46,10 +58,14 @@ export default function KakaoMapView({
         const forest = forestsRef.current.find(f => f.id === e.data.id);
         if (forest) onForestClick(forest);
       }
+      if (e.data?.type === 'CAMP_CLICK') {
+        const camp = campsRef.current.find(c => c.id === e.data.id);
+        if (camp) onCampClick(camp);
+      }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [onMarkerClick, onForestClick]);
+  }, [onMarkerClick, onForestClick, onCampClick]);
 
   const handleIframeLoad = () => {
     setTimeout(() => {
@@ -59,6 +75,9 @@ export default function KakaoMapView({
         );
         iframeRef.current?.contentWindow?.postMessage(
           { type: 'INIT_FORESTS', forests: forestsRef.current }, '*'
+        );
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: 'INIT_CAMPS', camps: campsRef.current }, '*'
         );
       }
     }, 1000);
@@ -87,6 +106,30 @@ export default function KakaoMapView({
       { type: 'TOGGLE_FORESTS', visible: showForests }, '*'
     );
   }, [showForests, ready]);
+
+  // 캠핑장 필터 변경
+  useEffect(() => {
+    if (!ready) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'FILTER_CAMPS', category: campFilterCategory }, '*'
+    );
+  }, [campFilterCategory, ready]);
+
+  // 캠핑장 표시/숨김
+  useEffect(() => {
+    if (!ready) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'TOGGLE_CAMPS', visible: showCamps }, '*'
+    );
+  }, [showCamps, ready]);
+
+  // 예약 정보 저장 후 지도 안 데이터도 갱신
+  useEffect(() => {
+    if (!ready || !updatedCamp) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'UPDATE_CAMP', camp: updatedCamp }, '*'
+    );
+  }, [updatedCamp, ready]);
 
   // 선택 트레일 이동
   useEffect(() => {
