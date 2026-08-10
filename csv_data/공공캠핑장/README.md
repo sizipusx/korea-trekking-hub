@@ -18,6 +18,15 @@
 npx tsx scripts/seed_camps.ts
 ```
 
+Node 가 없는 환경이라면 **`camps_seed.sql`** 을 Supabase SQL Editor 에 붙여넣어 실행하세요.
+329건이 그대로 들어가며, 여러 번 실행해도 안전합니다(예약 정보는 빈 값으로 덮어쓰지 않음).
+다만 좌표가 없는 35건은 `geocoded = FALSE` 로 들어가 지도에 표시되지 않습니다 —
+좌표는 Node 환경에서 위 시드를 한 번 돌려야 채워집니다.
+
+> ⚠️ **엑셀로 CSV를 편집할 때는 반드시 "CSV UTF-8(쉼표로 분리)" 형식으로 저장하세요.**
+> 그냥 저장하면 CP949(ANSI)로 바뀌면서 한글이 깨집니다.
+> (시드 스크립트는 CP949 도 읽을 수 있게 해뒀지만, 저장소에는 UTF-8 로 두는 편이 좋습니다.)
+
 `camps_master.csv` 를 읽어 좌표 없는 건만 카카오 지오코딩하고,
 `camps_reservation.csv` 를 id 기준으로 병합해 `camps` 테이블에 upsert 합니다.
 지오코딩 결과는 `scripts/camps_geocoded.json` 에 캐시되어 재실행 시 재사용됩니다.

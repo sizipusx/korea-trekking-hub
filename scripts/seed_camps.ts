@@ -56,6 +56,20 @@ interface CampSeed {
   source: string;
 }
 
+// ── CSV 읽기 (엑셀이 CP949로 저장해도 깨지지 않게) ──────────────────
+// 엑셀에서 CSV를 편집·저장하면 UTF-8 BOM 이 사라지고 ANSI(CP949)로 바뀝니다.
+// UTF-8 로 먼저 시도하고 실패하면 EUC-KR 로 다시 읽습니다.
+function readCsvFile(filePath: string): string {
+  const buf = fs.readFileSync(filePath);
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+  } catch {
+    console.warn(`⚠️  ${path.basename(filePath)} 가 CP949 로 저장돼 있어 EUC-KR 로 읽습니다.`);
+    console.warn('   (엑셀에서 편집했다면 "CSV UTF-8" 형식으로 저장해 주세요)');
+    return new TextDecoder('euc-kr').decode(buf);
+  }
+}
+
 // ── 최소 CSV 파서 (따옴표·개행 포함 필드 지원) ─────────────────────
 function parseCsv(text: string): Record<string, string>[] {
   const src = text.replace(/^﻿/, ''); // UTF-8 BOM 제거 (엑셀 저장분 대응)
@@ -125,10 +139,10 @@ async function geocode(c: CampSeed) {
 
 // ── 로드 ───────────────────────────────────────────────────────────
 function loadCamps(): CampSeed[] {
-  const master = parseCsv(fs.readFileSync(MASTER, 'utf8'));
+  const master = parseCsv(readCsvFile(MASTER));
   const resv = new Map<string, Record<string, string>>();
   if (fs.existsSync(RESERVATION)) {
-    for (const r of parseCsv(fs.readFileSync(RESERVATION, 'utf8'))) resv.set(r.id, r);
+    for (const r of parseCsv(readCsvFile(RESERVATION))) resv.set(r.id, r);
   }
 
   return master.map((m) => {
