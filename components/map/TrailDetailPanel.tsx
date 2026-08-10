@@ -5,6 +5,8 @@ import type { Trail } from '@/types/trail';
 import { CATEGORY_META, DIFFICULTY_COLOR, SEASON_META } from '@/types/trail';
 import type { ForestRow } from '@/types/forest';
 import { FOREST_CATEGORY_META } from '@/types/forest';
+import type { CampRow } from '@/types/camp';
+import { CAMP_CATEGORY_META } from '@/types/camp';
 
 const CAT_COLORS: Record<string, string> = {
   '동서트레일': '#f97316', '국가숲길': '#22c55e', '코리아둘레길': '#0ea5e9',
@@ -17,11 +19,15 @@ interface Props {
   currentMonth: number;
   onClose: () => void;
   onForestSelect?: (forest: ForestRow) => void;   // 주변 휴양림 클릭 시
+  onCampSelect?: (camp: CampRow) => void;         // 주변 캠핑장 클릭 시
 }
 
 type NearbyForest = ForestRow & { distance_km: number };
+type NearbyCamp = CampRow & { distance_km: number };
 
-export default function TrailDetailPanel({ trail, currentMonth, onClose, onForestSelect }: Props) {
+export default function TrailDetailPanel({
+  trail, currentMonth, onClose, onForestSelect, onCampSelect,
+}: Props) {
   const catColor = CAT_COLORS[trail.category] ?? '#10b981';
   const catEmoji = CATEGORY_META[trail.category as keyof typeof CATEGORY_META]?.emoji ?? '🗺';
 
@@ -38,6 +44,22 @@ export default function TrailDetailPanel({ trail, currentMonth, onClose, onFores
       .then((data) => { if (!cancelled) setNearby(data.forests ?? []); })
       .catch(() => { if (!cancelled) setNearby([]); })
       .finally(() => { if (!cancelled) setLoadingNearby(false); });
+    return () => { cancelled = true; };
+  }, [trail.id, trail.gpx]);
+
+  // ── 주변 지자체 캠핑장 페칭 ──────────────────────
+  const [nearbyCamps, setNearbyCamps] = useState<NearbyCamp[]>([]);
+  const [loadingCamps, setLoadingCamps] = useState(false);
+
+  useEffect(() => {
+    if (!trail.gpx) { setNearbyCamps([]); return; }
+    let cancelled = false;
+    setLoadingCamps(true);
+    fetch(`/api/camps?near=${trail.gpx.lat},${trail.gpx.lng}&radius=25`)
+      .then((res) => res.ok ? res.json() : { camps: [] })
+      .then((data) => { if (!cancelled) setNearbyCamps(data.camps ?? []); })
+      .catch(() => { if (!cancelled) setNearbyCamps([]); })
+      .finally(() => { if (!cancelled) setLoadingCamps(false); });
     return () => { cancelled = true; };
   }, [trail.id, trail.gpx]);
 
@@ -117,6 +139,41 @@ export default function TrailDetailPanel({ trail, currentMonth, onClose, onFores
           <p className="text-[11px] text-emerald-200 leading-relaxed">{trail.highlights}</p>
         </div>
 
+        {/* 전체 안내지도 */}
+        {trail.map_image_url && (
+          <div className="rounded-lg overflow-hidden border border-white/10">
+            <p className="text-[10px] text-slate-500 px-3 py-1.5 bg-black/25">🗺️ 전체 안내지도</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={trail.map_image_url} alt={`${trail.name} 전체 안내지도`} className="w-full h-auto block" loading="lazy" />
+          </div>
+        )}
+
+        {/* 하위 코스 */}
+        {trail.sections && trail.sections.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] text-slate-500 font-bold">🧭 코스 구성 ({trail.sections.length}개)</p>
+            {trail.sections.map((s) => (
+              <div key={s.id} className="rounded-lg border border-white/8 overflow-hidden" style={{ background:'rgba(255,255,255,0.02)' }}>
+                {s.map_image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.map_image_url} alt={`${s.name} 지도`} className="w-full h-auto block" loading="lazy" />
+                )}
+                <div className="px-3 py-2">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span className="text-[11px] font-bold text-slate-200">{s.name}</span>
+                    {s.distance_km != null && <span className="text-[11px] font-black text-emerald-400">{s.distance_km}km</span>}
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1">📍 {s.start_point} → {s.end_point}</p>
+                  {(s.deck_start || s.deck_end) && (
+                    <p className="text-[10px] text-sky-400 mt-0.5">🌊 해안데크: {s.deck_start}{s.deck_start && s.deck_end ? ' → ' : ''}{s.deck_end}</p>
+                  )}
+                  {s.highlights && <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{s.highlights}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ── 주변 자연휴양림 (반경 25km) ───────────── */}
         <div className="rounded-lg px-3 py-2.5 bg-cyan-950/20 border border-cyan-800/30">
           <div className="flex items-center justify-between mb-2">
@@ -157,6 +214,63 @@ export default function TrailDetailPanel({ trail, currentMonth, onClose, onFores
                     <span className="text-[11px] font-bold flex-shrink-0" style={{ color: fColor }}>
                       {f.distance_km.toFixed(1)}km
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── 주변 지자체 캠핑장 (반경 25km) ────────── */}
+        <div className="rounded-lg px-3 py-2.5 bg-pink-950/20 border border-pink-800/30">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] text-pink-400 font-bold">⛺ 주변 지자체 캠핑장 (25km 이내)</p>
+            {!loadingCamps && nearbyCamps.length > 0 && (
+              <span className="text-[10px] text-pink-600">{nearbyCamps.length}곳</span>
+            )}
+          </div>
+
+          {loadingCamps ? (
+            <p className="text-[11px] text-slate-500">불러오는 중...</p>
+          ) : nearbyCamps.length === 0 ? (
+            <p className="text-[11px] text-slate-500">반경 25km 내 등록된 지자체 캠핑장이 없습니다.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {nearbyCamps.map((c) => {
+                const cMeta = CAMP_CATEGORY_META[c.category];
+                const cColor = cMeta?.color ?? '#db2777';
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => onCampSelect?.(c)}
+                    className="w-full text-left rounded-lg px-2.5 py-2 transition border"
+                    style={{ background: 'rgba(255,255,255,0.025)', borderColor: 'rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px]">{cMeta?.emoji}</span>
+                          <span className="text-[12px] font-bold text-slate-100 truncate">{c.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-[9px] font-bold px-1 py-0.5 rounded"
+                            style={{ background: `${cColor}18`, color: cColor }}>{c.category}</span>
+                          <span className="text-[9px] text-slate-500">{c.sigungu}</span>
+                          {c.operator && <span className="text-[9px] text-slate-500">· {c.operator}</span>}
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold flex-shrink-0" style={{ color: cColor }}>
+                        {c.distance_km.toFixed(1)}km
+                      </span>
+                    </div>
+                    {/* 예약 정보 — 이 프로젝트에서 가장 중요한 정보라 목록에서도 바로 보이게 */}
+                    <p className="text-[10px] mt-1 leading-snug"
+                      style={{ color: c.reservation_open || c.use_season ? '#fbbf24' : '#64748b' }}>
+                      {c.reservation_open
+                        ? `🔔 ${c.reservation_open}`
+                        : c.use_season
+                          ? `🗓 ${c.use_season}`
+                          : '예약 정보 미확인 — 클릭해 입력'}
+                    </p>
                   </button>
                 );
               })}

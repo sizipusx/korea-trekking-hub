@@ -199,6 +199,8 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
               camps={mappableCamps}
               updatedCamp={savedCamp}
               selectedId={selectedTrail?.id ?? null}
+              selectedForestId={selectedForest?.id ?? null}
+              selectedCampId={selectedCamp?.id ?? null}
               filterCategory={filterCategory}
               forestFilterCategory={forestFilterCategory}
               campFilterCategory={campFilterCategory}
@@ -217,6 +219,8 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
                 trail={selectedTrail}
                 currentMonth={currentMonth}
                 onClose={() => setSelectedTrail(null)}
+                onForestSelect={handleForestClick}
+                onCampSelect={handleCampClick}
               />
             </div>
           )}
@@ -235,6 +239,7 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
             <div className="flex-shrink-0 rounded-xl overflow-hidden"
               style={{ height: '300px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <CampDetailPanel
+                key={selectedCamp.id}
                 camp={selectedCamp}
                 onClose={() => setSelectedCamp(null)}
                 onSaved={handleCampSaved}

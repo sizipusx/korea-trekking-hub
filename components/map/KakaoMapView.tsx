@@ -11,6 +11,8 @@ interface Props {
   camps: CampRow[];
   updatedCamp: CampRow | null;   // 예약 정보 저장 직후, 지도 팝업에도 반영하기 위한 값
   selectedId: string | null;
+  selectedForestId: string | null;  // 코스 패널의 '주변 휴양림'에서 고른 항목으로 지도 이동
+  selectedCampId: string | null;    // 코스 패널의 '주변 캠핑장'에서 고른 항목으로 지도 이동
   filterCategory: string;
   forestFilterCategory: string;
   campFilterCategory: string;
@@ -22,7 +24,7 @@ interface Props {
 }
 
 export default function KakaoMapView({
-  trails, forests, camps, updatedCamp, selectedId, filterCategory,
+  trails, forests, camps, updatedCamp, selectedId, selectedForestId, selectedCampId, filterCategory,
   forestFilterCategory, campFilterCategory, showForests, showCamps,
   onMarkerClick, onForestClick, onCampClick,
 }: Props) {
@@ -138,6 +140,22 @@ export default function KakaoMapView({
       { type: 'SELECT', id: selectedId }, '*'
     );
   }, [selectedId, ready]);
+
+  // 선택 휴양림 이동
+  useEffect(() => {
+    if (!ready || !selectedForestId) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'SELECT_FOREST', id: selectedForestId }, '*'
+    );
+  }, [selectedForestId, ready]);
+
+  // 선택 캠핑장 이동
+  useEffect(() => {
+    if (!ready || !selectedCampId) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'SELECT_CAMP', id: selectedCampId }, '*'
+    );
+  }, [selectedCampId, ready]);
 
   return (
     <div className="relative w-full h-full">

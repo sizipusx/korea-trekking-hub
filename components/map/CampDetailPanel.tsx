@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { CampRow } from '@/types/camp';
 import { CAMP_CATEGORY_META, RESERVATION_UNKNOWN } from '@/types/camp';
@@ -20,6 +20,31 @@ const OPEN_PRESETS = [
 ];
 const SEASON_PRESETS = ['연중', '3월~11월', '4월~10월', '주말·공휴일만'];
 
+const INPUT_STYLE: CSSProperties = {
+  width: '100%',
+  background: 'rgba(0,0,0,0.35)',
+  border: '1px solid rgba(255,255,255,0.14)',
+  borderRadius: 6,
+  padding: '6px 8px',
+  fontSize: 12,
+  color: '#e2e8f0',
+  outline: 'none',
+};
+
+function Presets({ values, onPick }: { values: string[]; onPick: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {values.map((v) => (
+        <button key={v} type="button" onClick={() => onPick(v)}
+          className="text-[10px] px-1.5 py-0.5 rounded transition"
+          style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)' }}>
+          {v}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function CampDetailPanel({ camp, onClose, onSaved }: Props) {
   const meta = CAMP_CATEGORY_META[camp.category];
   const color = meta?.color ?? '#db2777';
@@ -35,19 +60,8 @@ export default function CampDetailPanel({ camp, onClose, onSaved }: Props) {
     reservation_url: camp.reservation_url ?? '',
   });
 
-  // 다른 캠핑장을 클릭하면 폼을 새 값으로 초기화
-  useEffect(() => {
-    setEditing(false);
-    setError(null);
-    setForm({
-      reservation_open: camp.reservation_open ?? '',
-      use_season: camp.use_season ?? '',
-      reservation_note: camp.reservation_note ?? '',
-      reservation_org: camp.reservation_org ?? '',
-      reservation_url: camp.reservation_url ?? '',
-    });
-  }, [camp.id, camp.reservation_open, camp.use_season, camp.reservation_note,
-      camp.reservation_org, camp.reservation_url]);
+  // 다른 캠핑장을 클릭하면 부모가 key={camp.id} 로 이 컴포넌트를 새로 마운트해
+  // 폼이 자동으로 초기화됩니다 (effect 로 setState 하지 않음).
 
   // 기간을 아직 못 찾았어도 메모만 적어둔 경우가 있어, 메모도 '입력됨'으로 봅니다.
   const hasPeriod = Boolean(camp.reservation_open || camp.use_season);
@@ -76,28 +90,7 @@ export default function CampDetailPanel({ camp, onClose, onSaved }: Props) {
     }
   };
 
-  const inputStyle: CSSProperties = {
-    width: '100%',
-    background: 'rgba(0,0,0,0.35)',
-    border: '1px solid rgba(255,255,255,0.14)',
-    borderRadius: 6,
-    padding: '6px 8px',
-    fontSize: 12,
-    color: '#e2e8f0',
-    outline: 'none',
-  };
 
-  const Presets = ({ values, onPick }: { values: string[]; onPick: (v: string) => void }) => (
-    <div className="flex flex-wrap gap-1 mt-1">
-      {values.map((v) => (
-        <button key={v} type="button" onClick={() => onPick(v)}
-          className="text-[10px] px-1.5 py-0.5 rounded transition"
-          style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)' }}>
-          {v}
-        </button>
-      ))}
-    </div>
-  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden"
@@ -155,33 +148,33 @@ export default function CampDetailPanel({ camp, onClose, onSaved }: Props) {
             <div className="space-y-2 mt-2">
               <div>
                 <label className="text-[10px] text-slate-400">🔔 예약 오픈 규칙</label>
-                <input style={inputStyle} value={form.reservation_open}
+                <input style={INPUT_STYLE} value={form.reservation_open}
                   placeholder="예: 이용월 1개월 전 1일 09시"
                   onChange={(e) => setForm({ ...form, reservation_open: e.target.value })} />
                 <Presets values={OPEN_PRESETS} onPick={(v) => setForm({ ...form, reservation_open: v })} />
               </div>
               <div>
                 <label className="text-[10px] text-slate-400">🗓 이용(운영) 기간</label>
-                <input style={inputStyle} value={form.use_season}
+                <input style={INPUT_STYLE} value={form.use_season}
                   placeholder="예: 3월~11월"
                   onChange={(e) => setForm({ ...form, use_season: e.target.value })} />
                 <Presets values={SEASON_PRESETS} onPick={(v) => setForm({ ...form, use_season: v })} />
               </div>
               <div>
                 <label className="text-[10px] text-slate-400">📝 메모</label>
-                <input style={inputStyle} value={form.reservation_note}
+                <input style={INPUT_STYLE} value={form.reservation_note}
                   placeholder="예: 성수기 추첨제, 군민 우선예약"
                   onChange={(e) => setForm({ ...form, reservation_note: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-slate-400">🏛 예약처</label>
-                  <input style={inputStyle} value={form.reservation_org}
+                  <input style={INPUT_STYLE} value={form.reservation_org}
                     onChange={(e) => setForm({ ...form, reservation_org: e.target.value })} />
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-400">🔗 예약 URL</label>
-                  <input style={inputStyle} value={form.reservation_url}
+                  <input style={INPUT_STYLE} value={form.reservation_url}
                     onChange={(e) => setForm({ ...form, reservation_url: e.target.value })} />
                 </div>
               </div>
