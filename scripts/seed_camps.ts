@@ -127,14 +127,20 @@ async function kakaoAddress(query: string) {
 }
 
 async function geocode(c: CampSeed) {
-  // 1순위 캠핑장명, 2순위 시군 + 이름, 3순위 주소
-  for (const q of [c.name, `${c.sigungu} ${c.name}`, c.address]) {
-    if (!q) continue;
+  // 1순위는 도로명 주소. 캠핑장명 키워드를 먼저 쓰면 같은 시군의 비슷한 이름을 잡는다.
+  // (실제로 '고창군 국민여가캠핑장'이 '동호 국민여가캠핑장' 좌표로 14.8km 어긋난 적 있음)
+  if (c.address) {
+    const hit = await kakaoAddress(c.address);
+    if (hit) return hit;
+    await sleep(120);
+  }
+  for (const q of [`${c.sigungu} ${c.name}`, c.name]) {
+    if (!q.trim()) continue;
     const hit = await kakaoKeyword(q);
     if (hit) return hit;
     await sleep(120);
   }
-  return c.address ? kakaoAddress(c.address) : null;
+  return null;
 }
 
 // ── 로드 ───────────────────────────────────────────────────────────
