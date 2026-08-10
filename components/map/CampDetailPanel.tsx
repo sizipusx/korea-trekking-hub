@@ -49,7 +49,9 @@ export default function CampDetailPanel({ camp, onClose, onSaved }: Props) {
   }, [camp.id, camp.reservation_open, camp.use_season, camp.reservation_note,
       camp.reservation_org, camp.reservation_url]);
 
-  const hasReservationInfo = Boolean(camp.reservation_open || camp.use_season);
+  // 기간을 아직 못 찾았어도 메모만 적어둔 경우가 있어, 메모도 '입력됨'으로 봅니다.
+  const hasPeriod = Boolean(camp.reservation_open || camp.use_season);
+  const hasReservationInfo = hasPeriod || Boolean(camp.reservation_note);
 
   const save = async () => {
     setSaving(true);
@@ -216,8 +218,11 @@ export default function CampDetailPanel({ camp, onClose, onSaved }: Props) {
               {camp.use_season && (
                 <p className="text-[12px] text-slate-200 mt-1">🗓 이용 기간: {camp.use_season}</p>
               )}
+              {!hasPeriod && (
+                <p className="text-[12px] text-slate-500">🔔 예약 오픈·이용 기간 미확인</p>
+              )}
               {camp.reservation_note && (
-                <p className="text-[11px] text-slate-400 mt-1">{camp.reservation_note}</p>
+                <p className="text-[11px] text-slate-400 mt-1">📝 {camp.reservation_note}</p>
               )}
             </>
           ) : (

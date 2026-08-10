@@ -294,16 +294,20 @@ export async function GET() {
           // 저장 직후에도 최신값을 보여주도록, 클릭 시점에 배열에서 다시 읽음
           var latest = camps.find(function(x){ return x.id === camp.id; });
           if (latest) camp = latest;
-          // 예약 정보가 이 오버레이의 핵심 — 없으면 '미확인'을 분명히 표시
-          var hasResv = !!(camp.reservation_open || camp.use_season);
-          var resvBody = hasResv
-            ? (camp.reservation_open
-                ? '<p style="margin:2px 0 0;font-size:11px;font-weight:700;color:#fbbf24">🔔 오픈: ' + esc(camp.reservation_open) + '</p>'
-                : '')
-              + (camp.use_season
-                ? '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">🗓 이용: ' + esc(camp.use_season) + '</p>'
-                : '')
-            : '<p style="margin:2px 0 0;font-size:11px;color:#64748b">미확인 — 아래 패널에서 ✏️ 직접 입력</p>';
+          // 예약 정보가 이 오버레이의 핵심 — 기간을 못 찾았어도 메모만 적어둔 경우가 있음
+          var resvBody = '';
+          if (camp.reservation_open) {
+            resvBody += '<p style="margin:2px 0 0;font-size:11px;font-weight:700;color:#fbbf24">🔔 오픈: ' + esc(camp.reservation_open) + '</p>';
+          }
+          if (camp.use_season) {
+            resvBody += '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">🗓 이용: ' + esc(camp.use_season) + '</p>';
+          }
+          if (camp.reservation_note) {
+            resvBody += '<p style="margin:2px 0 0;font-size:11px;color:#94a3b8">📝 ' + esc(camp.reservation_note) + '</p>';
+          }
+          if (!resvBody) {
+            resvBody = '<p style="margin:2px 0 0;font-size:11px;color:#64748b">미확인 — 아래 패널에서 ✏️ 직접 입력</p>';
+          }
           var link = camp.reservation_url
             ? '<a href="' + esc(camp.reservation_url) + '" target="_blank" style="color:#f472b6;text-decoration:none">예약·안내 바로가기 →</a>'
             : esc(camp.reservation_org || '개별 문의');
