@@ -42,6 +42,14 @@ export async function GET() {
       color:#94a3b8; cursor:pointer; white-space:nowrap;
     }
     #map-type button.on { background:rgba(16,185,129,0.18); color:#10b981; }
+    /* 자전거도로는 베이스맵과 무관한 오버레이라 독립 토글 */
+    #toggle-bike {
+      position:absolute; top:58px; right:12px; z-index:10;
+      padding:7px 12px; font-size:11px; font-weight:700; font-family:sans-serif;
+      background:rgba(15,23,42,0.88); border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px; color:#94a3b8; cursor:pointer; white-space:nowrap;
+    }
+    #toggle-bike.on { border-color:rgba(59,130,246,0.6); color:#60a5fa; }
     #legend p.tit { font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px; font-family:sans-serif; }
     #legend .sep { height:1px; background:rgba(255,255,255,0.08); margin:8px 0 6px; }
     .leg-item { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
@@ -86,6 +94,7 @@ export async function GET() {
     <button data-type="SKYVIEW" onclick="setMapType('SKYVIEW')">위성</button>
     <button data-type="TERRAIN" onclick="setMapType('TERRAIN')">지형</button>
   </div>
+  <button id="toggle-bike" onclick="toggleBike()">🚲 자전거도로</button>
   <div id="legend">
     <p class="tit">트레일</p>
     <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div><span class="leg-text">동서트레일</span></div>
@@ -134,6 +143,7 @@ export async function GET() {
 
     let map, trails = [], forests = [], camps = [], activeOverlay = null;
     let mapType = 'ROADMAP';   // 일반 / 위성(하이브리드) / 지형(일반지도 + 지형 오버레이)
+    let bikeOn = false;        // 자전거도로 오버레이 — 어느 베이스맵 위에서도 켜고 끌 수 있음
     let forestMarkers = [], forestsVisible = true;
     let campMarkers = [], campsVisible = true;
 
@@ -378,17 +388,33 @@ export async function GET() {
       window.parent.postMessage({ type: 'FORESTS_TOGGLED', visible: forestsVisible }, '*');
     }
 
-    // 카카오맵의 지형도는 별도 베이스맵이 아니라 일반지도 위에 얹는 오버레이 타입
-    function setMapType(type) {
+    // 카카오맵의 지형도·자전거도로는 별도 베이스맵이 아니라 일반지도 위에 얹는 오버레이 타입.
+    // 얹혀 있던 오버레이를 모두 걷어낸 뒤 현재 상태대로 다시 올려, 중복·잔존을 신경 쓰지 않는다.
+    function applyMapType() {
       if (!map) return;
-      if (mapType === 'TERRAIN') map.removeOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
-      map.setMapTypeId(type === 'SKYVIEW' ? kakao.maps.MapTypeId.HYBRID : kakao.maps.MapTypeId.ROADMAP);
-      if (type === 'TERRAIN') map.addOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      map.removeOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE);
+      map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE_HYBRID);
+      map.setMapTypeId(mapType === 'SKYVIEW' ? kakao.maps.MapTypeId.HYBRID : kakao.maps.MapTypeId.ROADMAP);
+      if (mapType === 'TERRAIN') map.addOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      // 위성 위에서는 밝은 기본 자전거 레이어가 묻혀서 강조용을 쓴다
+      if (bikeOn) map.addOverlayMapTypeId(mapType === 'SKYVIEW'
+        ? kakao.maps.MapTypeId.BICYCLE_HYBRID : kakao.maps.MapTypeId.BICYCLE);
+    }
+
+    function setMapType(type) {
       mapType = type;
+      applyMapType();
       var btns = document.querySelectorAll('#map-type button');
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.toggle('on', btns[i].getAttribute('data-type') === type);
       }
+    }
+
+    function toggleBike() {
+      bikeOn = !bikeOn;
+      applyMapType();
+      document.getElementById('toggle-bike').classList.toggle('on', bikeOn);
     }
 
     function closeOverlay() { if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; } }
