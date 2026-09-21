@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { Trail } from '@/types/trail';
 import type { ForestRow } from '@/types/forest';
-import { FOREST_CATEGORY_META } from '@/types/forest';
 import type { CampRow } from '@/types/camp';
-import { CAMP_CATEGORY_META, CAMP_CATEGORIES } from '@/types/camp';
+import type { MapLayerState, MapPoint } from '@/types/mapLayer';
+import {
+  ALL_LAYERS, OVERLAY_LAYERS,
+  toTrailPoints, toForestPoints, toCampPoints,
+} from './layers';
 import MapSidebar from './MapSidebar';
 import TrailDetailPanel from './TrailDetailPanel';
 import ForestDetailPanel from './ForestDetailPanel';
@@ -30,49 +33,71 @@ interface Props {
   camps: CampRow[];
 }
 
-const FOREST_CATS = ['전체', '국립', '공립', '사립'] as const;
+// 어느 레이어의 어떤 항목이 선택됐는지 — 레이어마다 상태를 따로 두지 않는다
+interface Selection { layer: string; id: string; }
 
 export default function MapPageClient({ trails, forests, camps }: Props) {
-  const [selectedTrail, setSelectedTrail] = useState<Trail | null>(null);
-  const [selectedForest, setSelectedForest] = useState<ForestRow | null>(null);
-  const [selectedCamp, setSelectedCamp] = useState<CampRow | null>(null);
   // 예약 정보를 지도에서 직접 고칠 수 있으므로 캠핑장은 로컬 상태로 들고 있습니다.
   const [campList, setCampList] = useState<CampRow[]>(camps);
   const [savedCamp, setSavedCamp] = useState<CampRow | null>(null);
-  const [filterCategory, setFilterCategory] = useState('전체');
-  const [forestFilterCategory, setForestFilterCategory] = useState('전체');
-  const [campFilterCategory, setCampFilterCategory] = useState('전체');
-  const [showForests, setShowForests] = useState(true);
-  const [showCamps, setShowCamps] = useState(true);
+  const [selection, setSelection] = useState<Selection | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const [filters, setFilters] = useState<Record<string, string>>(
+    () => Object.fromEntries(ALL_LAYERS.map((l) => [l.id, '전체'])),
+  );
+  const [visible, setVisible] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(ALL_LAYERS.map((l) => [l.id, l.defaultVisible])),
+  );
+
   const currentMonth = new Date().getMonth() + 1;
-  const mappableForests = forests.filter((f) => f.geocoded);
-  const mappableCamps = campList.filter((c) => c.geocoded);
+  const mappableForests = useMemo(() => forests.filter((f) => f.geocoded), [forests]);
+  const mappableCamps = useMemo(() => campList.filter((c) => c.geocoded), [campList]);
   // 예약 정보 입력 진척도 — 조금씩 채워가는 작업이라 눈에 보이게 둡니다.
   const filledCount = campList.filter((c) => c.reservation_open || c.use_season).length;
 
-  const handleMarkerClick = (trail: Trail) => {
-    setSelectedTrail(trail);
-    setSelectedForest(null);
-    setSelectedCamp(null);
+  // 레이어 id → 지도에 넘길 점 목록
+  const itemsByLayer = useMemo<Record<string, MapPoint[]>>(() => ({
+    trails: toTrailPoints(trails),
+    forests: toForestPoints(mappableForests),
+    camps: toCampPoints(mappableCamps),
+  }), [trails, mappableForests, mappableCamps]);
+
+  const layerStates: MapLayerState[] = ALL_LAYERS.map((def) => ({
+    def,
+    items: itemsByLayer[def.id] ?? [],
+    filterCategory: filters[def.id] ?? '전체',
+    visible: visible[def.id] ?? true,
+    selectedId: selection?.layer === def.id ? selection.id : null,
+  }));
+
+  const select = useCallback((layer: string, id: string) => setSelection({ layer, id }), []);
+  const toggleLayer = useCallback((layer: string, v: boolean) => {
+    setVisible((prev) => ({ ...prev, [layer]: v }));
+  }, []);
+  const changeFilter = (layer: string, category: string) => {
+    setFilters((prev) => ({ ...prev, [layer]: category }));
+    setSelection((prev) => (prev?.layer === layer ? null : prev));
   };
-  const handleForestClick = (forest: ForestRow) => {
-    setSelectedForest(forest);
-    setSelectedTrail(null);
-    setSelectedCamp(null);
-  };
-  const handleCampClick = (camp: CampRow) => {
-    setSelectedCamp(camp);
-    setSelectedTrail(null);
-    setSelectedForest(null);
-  };
+
   // 예약 정보 저장 후: 목록·선택 항목·지도 팝업을 모두 최신값으로 교체
   const handleCampSaved = (updated: CampRow) => {
     setCampList((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-    setSelectedCamp(updated);
+    setSelection({ layer: 'camps', id: updated.id });
     setSavedCamp(updated);
   };
+
+  // 선택된 항목을 레이어별 원본에서 되찾는다
+  const selectedTrail = selection?.layer === 'trails'
+    ? trails.find((t) => t.id === selection.id) ?? null : null;
+  const selectedForest = selection?.layer === 'forests'
+    ? forests.find((f) => f.id === selection.id) ?? null : null;
+  const selectedCamp = selection?.layer === 'camps'
+    ? campList.find((c) => c.id === selection.id) ?? null : null;
+
+  const updatedItem = savedCamp
+    ? { layer: 'camps', item: savedCamp as unknown as MapPoint }
+    : null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-950">
@@ -84,9 +109,9 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
         <MapSidebar
           trails={trails}
           selectedId={selectedTrail?.id ?? null}
-          filterCategory={filterCategory}
-          onCategoryChange={(cat) => { setFilterCategory(cat); setSelectedTrail(null); }}
-          onSelect={(trail) => { setSelectedTrail(trail); setSelectedForest(null); setSelectedCamp(null); }}
+          filterCategory={filters.trails}
+          onCategoryChange={(cat) => changeFilter('trails', cat)}
+          onSelect={(trail) => select('trails', trail.id)}
           currentMonth={currentMonth}
           forestCount={mappableForests.length}
         />
@@ -119,108 +144,85 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
           </span>
         </div>
 
-        {/* 휴양림 필터 바 */}
-        <div className="flex items-center gap-2 px-3 py-2 flex-shrink-0 flex-wrap border-b border-white/8"
-          style={{ background: 'rgba(8,47,73,0.4)' }}>
-          <span className="text-[10px] text-cyan-500 uppercase tracking-widest mr-1">🏕 휴양림</span>
-          {FOREST_CATS.map((c) => {
-            const active = forestFilterCategory === c;
-            const col = c === '전체' ? '#22d3ee' : FOREST_CATEGORY_META[c]?.color ?? '#0891b2';
-            return (
-              <button key={c} onClick={() => { setForestFilterCategory(c); setSelectedForest(null); }}
-                className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition"
-                style={{
-                  borderColor: active ? col : 'rgba(255,255,255,0.12)',
-                  background: active ? `${col}22` : 'transparent',
-                  color: active ? col : '#64748b',
-                }}>
-                {c === '전체' ? '전체' : `${FOREST_CATEGORY_META[c].emoji} ${c}`}
-              </button>
-            );
-          })}
-          <button onClick={() => setShowForests(!showForests)}
-            className="ml-auto px-3 py-0.5 rounded-full text-[11px] font-bold border transition"
-            style={{
-              borderColor: showForests ? '#22d3ee' : 'rgba(255,255,255,0.12)',
-              background: showForests ? 'rgba(34,211,238,0.15)' : 'transparent',
-              color: showForests ? '#22d3ee' : '#64748b',
-            }}>
-            {showForests ? '👁 표시 중' : '🚫 숨김'}
-          </button>
-        </div>
+        {/* ── 레이어별 필터 바 (레지스트리 순회) ────────── */}
+        {OVERLAY_LAYERS.map((layer) => {
+          const active = filters[layer.id];
+          const shown = visible[layer.id];
+          return (
+            <div key={layer.id}
+              className="flex items-center gap-2 px-3 py-2 flex-shrink-0 flex-wrap border-b border-white/8"
+              style={{ background: layer.barBackground }}>
+              <span className="text-[10px] uppercase tracking-widest mr-1"
+                style={{ color: layer.accent }}>
+                {layer.emoji} {layer.label}
+              </span>
 
-        {/* 지자체 캠핑장 필터 바 */}
-        <div className="flex items-center gap-2 px-3 py-2 flex-shrink-0 flex-wrap border-b border-white/8"
-          style={{ background: 'rgba(80,7,36,0.35)' }}>
-          <span className="text-[10px] text-pink-400 uppercase tracking-widest mr-1">⛺ 지자체 캠핑장</span>
-          {CAMP_CATEGORIES.map((c) => {
-            const active = campFilterCategory === c;
-            const meta = c === '전체' ? null : CAMP_CATEGORY_META[c];
-            const col = meta?.color ?? '#f472b6';
-            return (
-              <button key={c} onClick={() => { setCampFilterCategory(c); setSelectedCamp(null); }}
-                className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition"
+              {layer.categories.map((c) => {
+                const on = active === c;
+                const col = c === '전체' ? layer.accent : (layer.style.colors[c] ?? layer.style.defaultColor);
+                const emoji = layer.style.emojis[c];
+                return (
+                  <button key={c} onClick={() => changeFilter(layer.id, c)}
+                    className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition"
+                    style={{
+                      borderColor: on ? col : 'rgba(255,255,255,0.12)',
+                      background: on ? `${col}22` : 'transparent',
+                      color: on ? col : '#64748b',
+                    }}>
+                    {emoji ? `${emoji} ${c}` : c}
+                  </button>
+                );
+              })}
+
+              {/* 캠핑장만 예약 정보 진척도와 내려받기를 함께 보여준다 */}
+              {layer.id === 'camps' && (
+                <>
+                  <span className="ml-auto text-[10px] text-slate-500">
+                    📅 예약 정보 {filledCount}/{campList.length}
+                  </span>
+                  <a href="/api/camps?export=reservation" download
+                    className="text-[10px] px-2 py-0.5 rounded-full border transition text-slate-400"
+                    style={{ borderColor: 'rgba(255,255,255,0.12)' }}>
+                    ⬇ CSV
+                  </a>
+                </>
+              )}
+
+              <button onClick={() => toggleLayer(layer.id, !shown)}
+                className={`${layer.id === 'camps' ? '' : 'ml-auto'} px-3 py-0.5 rounded-full text-[11px] font-bold border transition`}
                 style={{
-                  borderColor: active ? col : 'rgba(255,255,255,0.12)',
-                  background: active ? `${col}22` : 'transparent',
-                  color: active ? col : '#64748b',
+                  borderColor: shown ? layer.accent : 'rgba(255,255,255,0.12)',
+                  background: shown ? `${layer.accent}26` : 'transparent',
+                  color: shown ? layer.accent : '#64748b',
                 }}>
-                {meta ? `${meta.emoji} ${c}` : '전체'}
+                {shown ? '👁 표시 중' : '🚫 숨김'}
               </button>
-            );
-          })}
-          {/* 예약 정보 입력 진척도 + 현재 내용 CSV로 내려받기 */}
-          <span className="ml-auto text-[10px] text-slate-500">
-            📅 예약 정보 {filledCount}/{campList.length}
-          </span>
-          <a href="/api/camps?export=reservation" download
-            className="text-[10px] px-2 py-0.5 rounded-full border transition text-slate-400"
-            style={{ borderColor: 'rgba(255,255,255,0.12)' }}>
-            ⬇ CSV
-          </a>
-          <button onClick={() => setShowCamps(!showCamps)}
-            className="px-3 py-0.5 rounded-full text-[11px] font-bold border transition"
-            style={{
-              borderColor: showCamps ? '#f472b6' : 'rgba(255,255,255,0.12)',
-              background: showCamps ? 'rgba(244,114,182,0.15)' : 'transparent',
-              color: showCamps ? '#f472b6' : '#64748b',
-            }}>
-            {showCamps ? '👁 표시 중' : '🚫 숨김'}
-          </button>
-        </div>
+            </div>
+          );
+        })}
 
         {/* 지도 + 상세 패널 */}
         <div className="flex-1 flex flex-col min-h-0 p-3 gap-3">
           <div className="flex-1 min-h-0 rounded-xl overflow-hidden"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
             <KakaoMapView
-              trails={trails}
-              forests={mappableForests}
-              camps={mappableCamps}
-              updatedCamp={savedCamp}
-              selectedId={selectedTrail?.id ?? null}
-              selectedForestId={selectedForest?.id ?? null}
-              selectedCampId={selectedCamp?.id ?? null}
-              filterCategory={filterCategory}
-              forestFilterCategory={forestFilterCategory}
-              campFilterCategory={campFilterCategory}
-              showForests={showForests}
-              showCamps={showCamps}
-              onMarkerClick={handleMarkerClick}
-              onForestClick={handleForestClick}
-              onCampClick={handleCampClick}
+              layers={layerStates}
+              updatedItem={updatedItem}
+              onSelect={select}
+              onToggleRequest={toggleLayer}
             />
           </div>
 
+          {/* 상세 패널은 레이어마다 보여줄 내용이 달라 그대로 둔다 */}
           {selectedTrail && (
             <div className="flex-shrink-0 rounded-xl overflow-hidden"
               style={{ height: '220px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <TrailDetailPanel
                 trail={selectedTrail}
                 currentMonth={currentMonth}
-                onClose={() => setSelectedTrail(null)}
-                onForestSelect={handleForestClick}
-                onCampSelect={handleCampClick}
+                onClose={() => setSelection(null)}
+                onForestSelect={(f) => select('forests', f.id)}
+                onCampSelect={(c) => select('camps', c.id)}
               />
             </div>
           )}
@@ -230,7 +232,7 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
               style={{ height: '220px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <ForestDetailPanel
                 forest={selectedForest}
-                onClose={() => setSelectedForest(null)}
+                onClose={() => setSelection(null)}
               />
             </div>
           )}
@@ -241,7 +243,7 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
               <CampDetailPanel
                 key={selectedCamp.id}
                 camp={selectedCamp}
-                onClose={() => setSelectedCamp(null)}
+                onClose={() => setSelection(null)}
                 onSaved={handleCampSaved}
               />
             </div>

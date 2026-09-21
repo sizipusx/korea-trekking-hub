@@ -67,10 +67,7 @@ export async function GET() {
       background:rgba(15,23,42,0.9); border-radius:8px; cursor:pointer; font-family:sans-serif;
     }
     #btn-all { border:1px solid rgba(16,185,129,0.5); color:#10b981; }
-    #toggle-forests { border:1px solid rgba(8,145,178,0.6); color:#22d3ee; }
-    #toggle-forests.off { opacity:0.45; }
-    #toggle-camps { border:1px solid rgba(219,39,119,0.6); color:#f472b6; }
-    #toggle-camps.off { opacity:0.45; }
+    .layer-toggle.off { opacity:0.45; }
     #loading {
       position:absolute; inset:0; background:#0f172a;
       display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20;
@@ -95,63 +92,257 @@ export async function GET() {
     <button data-type="TERRAIN" onclick="setMapType('TERRAIN')">지형</button>
   </div>
   <button id="toggle-bike" onclick="toggleBike()">🚲 자전거도로</button>
-  <div id="legend">
-    <p class="tit">트레일</p>
-    <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div><span class="leg-text">동서트레일</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:#22c55e"></div><span class="leg-text">국가숲길</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:#0ea5e9"></div><span class="leg-text">코리아둘레길</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:#a78bfa"></div><span class="leg-text">국립공원</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div><span class="leg-text">제주 올레</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div><span class="leg-text">지자체 트레일</span></div>
-    <div class="leg-item"><div class="leg-dot" style="background:#94a3b8"></div><span class="leg-text">백두대간</span></div>
-    <div class="sep"></div>
-    <p class="tit">자연휴양림</p>
-    <div class="leg-item"><div class="leg-sq" style="background:#16a34a"></div><span class="leg-text">국립</span></div>
-    <div class="leg-item"><div class="leg-sq" style="background:#0891b2"></div><span class="leg-text">공립</span></div>
-    <div class="leg-item"><div class="leg-sq" style="background:#d97706"></div><span class="leg-text">사립</span></div>
-    <div class="sep"></div>
-    <p class="tit">지자체 캠핑장</p>
-    <div class="leg-item"><div class="leg-sq" style="background:#db2777"></div><span class="leg-text">일반야영장</span></div>
-    <div class="leg-item"><div class="leg-sq" style="background:#ec4899"></div><span class="leg-text">자동차야영장</span></div>
-    <div class="leg-item"><div class="leg-sq" style="background:#fb7185"></div><span class="leg-text">카라반</span></div>
-    <div class="leg-item"><div class="leg-sq" style="background:#f472b6"></div><span class="leg-text">글램핑</span></div>
-  </div>
+  <!-- 범례와 레이어 토글은 부모가 보낸 레이어 정의로 만들어진다 -->
+  <div id="legend"></div>
   <div id="map-actions">
-    <button id="toggle-camps" onclick="toggleCamps()">⛺ 캠핑장 표시</button>
-    <button id="toggle-forests" onclick="toggleForests()">🏕 휴양림 표시</button>
     <button id="btn-all" onclick="resetMap()">🗺 전체 보기</button>
   </div>
 
   <script>${sdk}</script>
   <script>
-    const CAT_COLORS = {
-      '동서트레일':'#f97316','국가숲길':'#22c55e','코리아둘레길':'#0ea5e9',
-      '국립공원':'#a78bfa','제주 올레':'#f59e0b','지자체 트레일':'#ef4444','백두대간':'#94a3b8'
-    };
-    const CAT_EMOJI = {
-      '동서트레일':'🟠','국가숲길':'🟢','코리아둘레길':'🔵',
-      '국립공원':'🟣','제주 올레':'🌊','지자체 트레일':'🔴','백두대간':'⚫'
-    };
-    const FOREST_COLORS = { '국립':'#16a34a','공립':'#0891b2','사립':'#d97706' };
-    const FOREST_EMOJI  = { '국립':'🌲','공립':'🏕','사립':'🏡' };
-    const CAMP_COLORS = {
-      '일반야영장':'#db2777','자동차야영장':'#ec4899','카라반':'#fb7185','글램핑':'#f472b6'
-    };
-    const CAMP_EMOJI = {
-      '일반야영장':'⛺','자동차야영장':'🚐','카라반':'🚚','글램핑':'✨'
-    };
+    // ── 레이어 레지스트리 ─────────────────────────────
+    // layers[id] = { def, items, markers, visible, filter }
+    // 부모가 INIT_LAYER로 등록해 주며, 이 스크립트는 레이어 종류를 미리 알지 못한다.
+    var map, activeOverlay = null;
+    var layers = {};
+    var layerOrder = [];
 
-    let map, trails = [], forests = [], camps = [], activeOverlay = null;
-    let mapType = 'ROADMAP';   // 일반 / 위성(하이브리드) / 지형(일반지도 + 지형 오버레이)
-    let bikeOn = false;        // 자전거도로 오버레이 — 어느 베이스맵 위에서도 켜고 끌 수 있음
-    let forestMarkers = [], forestsVisible = true;
-    let campMarkers = [], campsVisible = true;
+    var mapType = 'ROADMAP';   // 일반 / 위성(하이브리드) / 지형(일반지도 + 지형 오버레이)
+    var bikeOn = false;        // 자전거도로 오버레이 — 어느 베이스맵 위에서도 켜고 끌 수 있음
 
     function esc(s) {
       return String(s == null ? '' : s)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // ── 마커 SVG ─────────────────────────────────────
+    // 레이어끼리 한눈에 구분되도록 모양을 달리한다.
+    function markerImage(shape, color, emoji) {
+      var w, h, body;
+      if (shape === 'house') {
+        w = 30; h = 38;
+        body = '<path d="M15 0L30 13v12a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V13z" fill="' + color + '" opacity="0.95"/>'
+             + '<text x="15" y="22" text-anchor="middle" font-size="12">' + emoji + '</text>';
+      } else if (shape === 'circle') {
+        w = 28; h = 34;
+        body = '<circle cx="14" cy="14" r="13" fill="' + color + '" opacity="0.95"/>'
+             + '<path d="M14 34l-5-8h10z" fill="' + color + '" opacity="0.95"/>'
+             + '<text x="14" y="19" text-anchor="middle" font-size="12">' + emoji + '</text>';
+      } else {
+        w = 36; h = 44;
+        body = '<path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="' + color + '"/>'
+             + '<text x="18" y="23" text-anchor="middle" font-size="13">' + emoji + '</text>';
+      }
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h
+              + '" viewBox="0 0 ' + w + ' ' + h + '">' + body + '</svg>';
+      return new kakao.maps.MarkerImage(
+        'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
+        new kakao.maps.Size(w, h), { offset: new kakao.maps.Point(w / 2, h) }
+      );
+    }
+
+    function colorOf(L, item) { return L.def.style.colors[item.category] || L.def.style.defaultColor; }
+    function emojiOf(L, item) { return L.def.style.emojis[item.category] || L.def.style.defaultEmoji; }
+
+    // ── 팝업 ─────────────────────────────────────────
+    // 레이어마다 보여줄 내용이 달라 이 부분만 레이어별로 둔다.
+    // 새 레이어를 붙일 때 손대야 하는 곳은 여기 하나다.
+    var POPUPS = {
+      trails: function(t, color) {
+        return '<p style="margin:0 0 4px;font-size:13px;font-weight:800;color:#f1f5f9">' + esc(t.name) + '</p>'
+          + '<p style="margin:0 0 8px;font-size:11px;color:#64748b">📍 ' + esc(t.region) + '</p>'
+          + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
+          + '<div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:4px 8px">'
+          + '<p style="margin:0;font-size:11px;color:#10b981">📏 ' + esc(t.distance_km) + 'km</p></div>'
+          + '<div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:4px 8px">'
+          + '<p style="margin:0;font-size:11px;color:#f59e0b">⛰ ' + esc(t.difficulty) + '</p></div></div>';
+      },
+      forests: function(f, color, emoji) {
+        var lottery = (f.lottery_targets && f.lottery_targets.length)
+          ? f.lottery_targets.join(', ') : '없음';
+        var resv = f.reservation_url
+          ? '<a href="' + esc(f.reservation_url) + '" target="_blank" style="color:#22d3ee;text-decoration:none">예약 바로가기 →</a>'
+          : esc(f.reservation_org || '개별 문의');
+        // 예약 방식 + 선착순 오픈 시점 (공립 익월말은 '다음 달 신청'으로 강조)
+        var fcfs = f.fcfs_type || '';
+        var openTime = f.open_time || '';
+        var resvType = fcfs
+          ? ('선착순 · ' + esc(fcfs) + (fcfs === '익월말' ? ' 예약' : ''))
+          : '예약처 문의';
+        var openLabel = (fcfs === '익월말') ? '다음 달 신청' : '신청';
+        var openLine = openTime
+          ? '<p style="margin:4px 0 0;font-size:11px;font-weight:700;color:#fbbf24">🔔 ' + openLabel + ': ' + esc(openTime) + '</p>'
+          : '';
+        return '<p style="margin:0 0 2px;font-size:13px;font-weight:800;color:#f1f5f9">' + emoji + ' ' + esc(f.name) + '</p>'
+          + '<p style="margin:0 0 8px;font-size:11px;color:#64748b">' + esc(f.category) + ' · ' + esc(f.sigungu) + '</p>'
+          + '<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap">'
+          +   (f.has_room ? '<span style="font-size:10px;background:rgba(34,197,94,0.15);color:#4ade80;border-radius:5px;padding:2px 6px">🛏 객실</span>' : '')
+          +   (f.has_camp ? '<span style="font-size:10px;background:rgba(8,145,178,0.18);color:#22d3ee;border-radius:5px;padding:2px 6px">⛺ 야영장</span>' : '')
+          +   (f.has_waitlist ? '<span style="font-size:10px;background:rgba(255,255,255,0.06);color:#cbd5e1;border-radius:5px;padding:2px 6px">⏳ 대기예약</span>' : '')
+          + '</div>'
+          + '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:6px 8px;margin-bottom:6px">'
+          +   '<p style="margin:0;font-size:10px;color:#94a3b8">예약 방식</p>'
+          +   '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">' + resvType + '</p>'
+          +   openLine
+          + '</div>'
+          + '<p style="margin:0 0 4px;font-size:10px;color:#94a3b8">추첨제 대상: <span style="color:#cbd5e1">' + esc(lottery) + '</span></p>'
+          + '<p style="margin:6px 0 0;font-size:11px">' + resv + '</p>';
+      },
+      camps: function(c, color, emoji) {
+        // 예약 정보가 이 팝업의 핵심 — 기간을 못 찾았어도 메모만 적어둔 경우가 있다
+        var resvBody = '';
+        if (c.reservation_open) {
+          resvBody += '<p style="margin:2px 0 0;font-size:11px;font-weight:700;color:#fbbf24">🔔 오픈: ' + esc(c.reservation_open) + '</p>';
+        }
+        if (c.use_season) {
+          resvBody += '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">🗓 이용: ' + esc(c.use_season) + '</p>';
+        }
+        if (c.reservation_note) {
+          resvBody += '<p style="margin:2px 0 0;font-size:11px;color:#94a3b8">📝 ' + esc(c.reservation_note) + '</p>';
+        }
+        if (!resvBody) {
+          resvBody = '<p style="margin:2px 0 0;font-size:11px;color:#64748b">미확인 — 아래 패널에서 ✏️ 직접 입력</p>';
+        }
+        var link = c.reservation_url
+          ? '<a href="' + esc(c.reservation_url) + '" target="_blank" style="color:#f472b6;text-decoration:none">예약·안내 바로가기 →</a>'
+          : esc(c.reservation_org || '개별 문의');
+        return '<p style="margin:0 0 2px;font-size:13px;font-weight:800;color:#f1f5f9">' + emoji + ' ' + esc(c.name) + '</p>'
+          + '<p style="margin:0 0 8px;font-size:11px;color:#64748b">' + esc(c.category) + ' · ' + esc(c.sigungu) + '</p>'
+          + '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:6px 8px;margin-bottom:6px">'
+          +   '<p style="margin:0;font-size:10px;color:#94a3b8">예약 정보</p>'
+          +   resvBody
+          + '</div>'
+          + '<p style="margin:0 0 4px;font-size:10px;color:#94a3b8">운영: <span style="color:#cbd5e1">' + esc(c.operator || '미상') + '</span></p>'
+          + (c.tel ? '<p style="margin:0 0 4px;font-size:10px;color:#94a3b8">☎ <span style="color:#cbd5e1">' + esc(c.tel) + '</span></p>' : '')
+          + '<p style="margin:6px 0 0;font-size:11px">' + link + '</p>';
+      }
+    };
+
+    function popupWidth(layerId) { return layerId === 'trails' ? '200px' : '230px'; }
+
+    function openPopup(L, item, pos) {
+      closeOverlay();
+      var color = colorOf(L, item);
+      var body = (POPUPS[L.def.id] || function(){ return esc(item.name); })(item, color, emojiOf(L, item));
+      var div = document.createElement('div');
+      div.style.cssText = 'background:#0f172a;border:2px solid ' + color
+        + ';border-radius:12px;padding:12px 14px;min-width:' + popupWidth(L.def.id) + ';max-width:280px;'
+        + 'font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.6);position:relative;bottom:12px;';
+      div.innerHTML = '<button onclick="closeOverlay()" style="position:absolute;top:6px;right:10px;'
+        + 'background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>' + body;
+      activeOverlay = new kakao.maps.CustomOverlay({ position: pos, content: div, yAnchor: 1.3 });
+      activeOverlay.setMap(map);
+      map.panTo(pos);
+    }
+
+    // ── 레이어 동작 ───────────────────────────────────
+    function registerLayer(def, items) {
+      if (!layers[def.id]) {
+        layers[def.id] = { def: def, items: [], markers: [], visible: true, filter: '전체' };
+        layerOrder.push(def.id);
+      }
+      layers[def.id].def = def;
+      layers[def.id].items = items || [];
+      buildLegend();
+      buildToggles();
+      renderLayer(def.id);
+    }
+
+    function visibleItems(L) {
+      return L.items.filter(function(it) {
+        if (it.lat == null || it.lng == null) return false;
+        return L.filter === '전체' || it.category === L.filter;
+      });
+    }
+
+    function renderLayer(id) {
+      var L = layers[id];
+      if (!L || !map) return;
+      L.markers.forEach(function(m) { m.setMap(null); });
+      L.markers = [];
+      visibleItems(L).forEach(function(item) {
+        var pos = new kakao.maps.LatLng(item.lat, item.lng);
+        var marker = new kakao.maps.Marker({
+          position: pos,
+          image: markerImage(L.def.style.shape, colorOf(L, item), emojiOf(L, item)),
+          map: L.visible ? map : null
+        });
+        kakao.maps.event.addListener(marker, 'click', function() {
+          // 부모가 값을 고쳤을 수 있으니 클릭 시점에 배열에서 다시 읽는다
+          var latest = L.items.find(function(x) { return x.id === item.id; }) || item;
+          openPopup(L, latest, pos);
+          window.parent.postMessage({ type: 'LAYER_CLICK', layer: L.def.id, id: item.id }, '*');
+        });
+        L.markers.push(marker);
+      });
+    }
+
+    function setLayerVisible(id, v) {
+      var L = layers[id];
+      if (!L) return;
+      L.visible = v;
+      L.markers.forEach(function(m) { m.setMap(v ? map : null); });
+      var btn = document.getElementById('toggle-' + id);
+      if (btn) {
+        btn.classList.toggle('off', !v);
+        btn.textContent = L.def.emoji + ' ' + L.def.label + (v ? ' 표시' : ' 숨김');
+      }
+    }
+
+    // 지도 안 버튼은 상태를 직접 바꾸지 않고 부모에게 요청만 한다.
+    // (부모의 필터바 토글과 어긋나지 않도록 상태는 한쪽에서만 관리)
+    function requestToggle(id) {
+      var L = layers[id];
+      if (!L) return;
+      window.parent.postMessage({ type: 'TOGGLE_REQUEST', layer: id, visible: !L.visible }, '*');
+    }
+
+    function selectInLayer(id, itemId) {
+      var L = layers[id];
+      if (!L) return;
+      var item = L.items.find(function(x) { return x.id === itemId; });
+      if (!item || item.lat == null) return;
+      map.panTo(new kakao.maps.LatLng(item.lat, item.lng));
+      map.setLevel(L.def.style.zoomLevel);
+    }
+
+    // ── 범례 · 토글 버튼 (레이어 정의에서 자동 생성) ──
+    function buildLegend() {
+      var el = document.getElementById('legend');
+      var html = '';
+      layerOrder.forEach(function(id, i) {
+        var L = layers[id];
+        var cats = L.def.categories.filter(function(c) { return c !== '전체'; });
+        if (!cats.length) return;
+        if (i > 0) html += '<div class="sep"></div>';
+        html += '<p class="tit">' + esc(L.def.label) + '</p>';
+        var cls = L.def.style.shape === 'pin' ? 'leg-dot' : 'leg-sq';
+        cats.forEach(function(c) {
+          var col = L.def.style.colors[c] || L.def.style.defaultColor;
+          html += '<div class="leg-item"><div class="' + cls + '" style="background:' + col + '"></div>'
+                + '<span class="leg-text">' + esc(c) + '</span></div>';
+        });
+      });
+      el.innerHTML = html;
+    }
+
+    function buildToggles() {
+      var actions = document.getElementById('map-actions');
+      layerOrder.forEach(function(id) {
+        if (document.getElementById('toggle-' + id)) return;
+        var L = layers[id];
+        var btn = document.createElement('button');
+        btn.id = 'toggle-' + id;
+        btn.className = 'layer-toggle';
+        btn.style.border = '1px solid ' + L.def.accent;
+        btn.style.color = L.def.accent;
+        btn.textContent = L.def.emoji + ' ' + L.def.label + ' 표시';
+        btn.onclick = function() { requestToggle(id); };
+        actions.insertBefore(btn, actions.firstChild);
+      });
+    }
+
+    // ── 지도 초기화 ───────────────────────────────────
     function initMap() {
       if (typeof kakao === 'undefined' || !kakao.maps) { setTimeout(initMap, 100); return; }
       kakao.maps.load(function() {
@@ -160,234 +351,31 @@ export async function GET() {
           center: new kakao.maps.LatLng(36.5, 127.8),
           level: 12
         });
+
         window.addEventListener('message', function(e) {
-          if (!e.data) return;
-          if (e.data.type === 'INIT_TRAILS') { trails = e.data.trails; renderMarkers(trails); }
-          if (e.data.type === 'INIT_FORESTS') { forests = e.data.forests; renderForests(forests); }
-          if (e.data.type === 'FILTER') {
-            renderMarkers(e.data.category === '전체' ? trails : trails.filter(function(t){ return t.category === e.data.category; }));
-          }
-          if (e.data.type === 'FILTER_FORESTS') {
-            var cat = e.data.category;
-            renderForests(cat === '전체' ? forests : forests.filter(function(f){ return f.category === cat; }));
-          }
-          if (e.data.type === 'TOGGLE_FORESTS') { setForestsVisible(e.data.visible); }
-          if (e.data.type === 'INIT_CAMPS') { camps = e.data.camps; renderCamps(camps); }
-          if (e.data.type === 'FILTER_CAMPS') {
-            var ccat = e.data.category;
-            renderCamps(ccat === '전체' ? camps : camps.filter(function(c){ return c.category === ccat; }));
-          }
-          if (e.data.type === 'TOGGLE_CAMPS') { setCampsVisible(e.data.visible); }
-          if (e.data.type === 'UPDATE_CAMP') {
-            // 예약 정보를 부모에서 저장했으면 지도 안 배열도 교체 (팝업은 클릭 시 최신값을 다시 읽음)
-            var uc = e.data.camp;
-            for (var ui = 0; ui < camps.length; ui++) {
-              if (camps[ui].id === uc.id) { camps[ui] = uc; break; }
+          if (!e.data || !e.data.type) return;
+          var d = e.data;
+          var L = d.layer ? layers[d.layer] : null;
+
+          if (d.type === 'INIT_LAYER') { registerLayer(d.def, d.items); return; }
+          if (!L) return;
+
+          if (d.type === 'SET_ITEMS')  { L.items = d.items || []; renderLayer(d.layer); }
+          if (d.type === 'FILTER')     { L.filter = d.category; renderLayer(d.layer); }
+          if (d.type === 'TOGGLE')     { setLayerVisible(d.layer, d.visible); }
+          if (d.type === 'SELECT')     { selectInLayer(d.layer, d.id); }
+          if (d.type === 'UPDATE_ITEM') {
+            for (var i = 0; i < L.items.length; i++) {
+              if (L.items[i].id === d.item.id) { L.items[i] = d.item; break; }
             }
           }
-          if (e.data.type === 'SELECT_CAMP') {
-            var sc = camps.find(function(c){ return c.id === e.data.id; });
-            if (sc && sc.lat) { map.panTo(new kakao.maps.LatLng(sc.lat, sc.lng)); map.setLevel(6); }
-          }
-          if (e.data.type === 'SELECT') {
-            var t = trails.find(function(t){ return t.id === e.data.id; });
-            if (t && t.gpx) { map.panTo(new kakao.maps.LatLng(t.gpx.lat, t.gpx.lng)); map.setLevel(7); }
-          }
-          if (e.data.type === 'SELECT_FOREST') {
-            var f = forests.find(function(f){ return f.id === e.data.id; });
-            if (f && f.lat) { map.panTo(new kakao.maps.LatLng(f.lat, f.lng)); map.setLevel(6); }
-          }
         });
+
         window.parent.postMessage({ type: 'MAP_READY' }, '*');
       });
     }
 
-    function renderMarkers(list) {
-      if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
-      list.filter(function(t){ return t.gpx; }).forEach(function(trail) {
-        var color = CAT_COLORS[trail.category] || '#10b981';
-        var emoji = CAT_EMOJI[trail.category] || '🗺';
-        var pos = new kakao.maps.LatLng(trail.gpx.lat, trail.gpx.lng);
-        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">'
-          + '<path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="' + color + '"/>'
-          + '<text x="18" y="23" text-anchor="middle" font-size="13">' + emoji + '</text></svg>';
-        var img = new kakao.maps.MarkerImage(
-          'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
-          new kakao.maps.Size(36, 44), { offset: new kakao.maps.Point(18, 44) }
-        );
-        var marker = new kakao.maps.Marker({ position: pos, image: img, map: map });
-        kakao.maps.event.addListener(marker, 'click', function() {
-          if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
-          var div = document.createElement('div');
-          div.style.cssText = 'background:#0f172a;border:2px solid ' + color
-            + ';border-radius:12px;padding:12px 14px;min-width:200px;'
-            + 'font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.6);position:relative;bottom:12px;';
-          div.innerHTML = '<button onclick="closeOverlay()" style="position:absolute;top:6px;right:10px;'
-            + 'background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>'
-            + '<p style="margin:0 0 4px;font-size:13px;font-weight:800;color:#f1f5f9">' + trail.name + '</p>'
-            + '<p style="margin:0 0 8px;font-size:11px;color:#64748b">📍 ' + trail.region + '</p>'
-            + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
-            + '<div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:4px 8px">'
-            + '<p style="margin:0;font-size:11px;color:#10b981">📏 ' + trail.distance_km + 'km</p></div>'
-            + '<div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:4px 8px">'
-            + '<p style="margin:0;font-size:11px;color:#f59e0b">⛰ ' + trail.difficulty + '</p></div></div>';
-          activeOverlay = new kakao.maps.CustomOverlay({ position: pos, content: div, yAnchor: 1.3 });
-          activeOverlay.setMap(map);
-          map.panTo(pos);
-          window.parent.postMessage({ type: 'MARKER_CLICK', id: trail.id }, '*');
-        });
-      });
-    }
-
-    function renderForests(list) {
-      forestMarkers.forEach(function(m){ m.setMap(null); });
-      forestMarkers = [];
-      list.filter(function(f){ return f.lat && f.lng; }).forEach(function(forest) {
-        var color = FOREST_COLORS[forest.category] || '#0891b2';
-        var emoji = FOREST_EMOJI[forest.category] || '🏕';
-        var pos = new kakao.maps.LatLng(forest.lat, forest.lng);
-        // 휴양림은 둥근 사각(다이아몬드형) 마커로 트레일과 시각적 구분
-        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">'
-          + '<path d="M15 0L30 13v12a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V13z" fill="' + color + '" opacity="0.95"/>'
-          + '<text x="15" y="22" text-anchor="middle" font-size="12">' + emoji + '</text></svg>';
-        var img = new kakao.maps.MarkerImage(
-          'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
-          new kakao.maps.Size(30, 38), { offset: new kakao.maps.Point(15, 38) }
-        );
-        var marker = new kakao.maps.Marker({ position: pos, image: img, map: forestsVisible ? map : null });
-        kakao.maps.event.addListener(marker, 'click', function() {
-          if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
-          var lottery = (forest.lottery_targets && forest.lottery_targets.length)
-            ? forest.lottery_targets.join(', ') : '없음';
-          var resv = forest.reservation_url
-            ? '<a href="' + forest.reservation_url + '" target="_blank" style="color:#22d3ee;text-decoration:none">예약 바로가기 →</a>'
-            : (forest.reservation_org || '개별 문의');
-          // 예약 방식 + 선착순 오픈 시점 (공립 익월말은 '다음 달 신청'으로 강조)
-          var fcfs = forest.fcfs_type || '';
-          var openTime = forest.open_time || '';
-          var resvType = fcfs
-            ? ('선착순 · ' + fcfs + (fcfs === '익월말' ? ' 예약' : ''))
-            : '예약처 문의';
-          var openLabel = (fcfs === '익월말') ? '다음 달 신청' : '신청';
-          var openLine = openTime
-            ? '<p style="margin:4px 0 0;font-size:11px;font-weight:700;color:#fbbf24">🔔 ' + openLabel + ': ' + openTime + '</p>'
-            : '';
-          var div = document.createElement('div');
-          div.style.cssText = 'background:#0f172a;border:2px solid ' + color
-            + ';border-radius:12px;padding:12px 14px;min-width:230px;max-width:280px;'
-            + 'font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.6);position:relative;bottom:12px;';
-          div.innerHTML = '<button onclick="closeOverlay()" style="position:absolute;top:6px;right:10px;'
-            + 'background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>'
-            + '<p style="margin:0 0 2px;font-size:13px;font-weight:800;color:#f1f5f9">' + emoji + ' ' + forest.name + '</p>'
-            + '<p style="margin:0 0 8px;font-size:11px;color:#64748b">' + forest.category + ' · ' + forest.sigungu + '</p>'
-            + '<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap">'
-            +   (forest.has_room ? '<span style="font-size:10px;background:rgba(34,197,94,0.15);color:#4ade80;border-radius:5px;padding:2px 6px">🛏 객실</span>' : '')
-            +   (forest.has_camp ? '<span style="font-size:10px;background:rgba(8,145,178,0.18);color:#22d3ee;border-radius:5px;padding:2px 6px">⛺ 야영장</span>' : '')
-            +   (forest.has_waitlist ? '<span style="font-size:10px;background:rgba(255,255,255,0.06);color:#cbd5e1;border-radius:5px;padding:2px 6px">⏳ 대기예약</span>' : '')
-            + '</div>'
-            + '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:6px 8px;margin-bottom:6px">'
-            +   '<p style="margin:0;font-size:10px;color:#94a3b8">예약 방식</p>'
-            +   '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">' + resvType + '</p>'
-            +   openLine
-            + '</div>'
-            + '<p style="margin:0 0 4px;font-size:10px;color:#94a3b8">추첨제 대상: <span style="color:#cbd5e1">' + lottery + '</span></p>'
-            + '<p style="margin:6px 0 0;font-size:11px">' + resv + '</p>';
-          activeOverlay = new kakao.maps.CustomOverlay({ position: pos, content: div, yAnchor: 1.3 });
-          activeOverlay.setMap(map);
-          map.panTo(pos);
-          window.parent.postMessage({ type: 'FOREST_CLICK', id: forest.id }, '*');
-        });
-        forestMarkers.push(marker);
-      });
-    }
-
-    function renderCamps(list) {
-      campMarkers.forEach(function(m){ m.setMap(null); });
-      campMarkers = [];
-      list.filter(function(c){ return c.lat && c.lng; }).forEach(function(camp) {
-        var color = CAMP_COLORS[camp.category] || '#db2777';
-        var emoji = CAMP_EMOJI[camp.category] || '⛺';
-        var pos = new kakao.maps.LatLng(camp.lat, camp.lng);
-        // 캠핑장은 원형 마커로 트레일(핀)·휴양림(오각형)과 구분
-        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34">'
-          + '<circle cx="14" cy="14" r="13" fill="' + color + '" opacity="0.95"/>'
-          + '<path d="M14 34l-5-8h10z" fill="' + color + '" opacity="0.95"/>'
-          + '<text x="14" y="19" text-anchor="middle" font-size="12">' + emoji + '</text></svg>';
-        var img = new kakao.maps.MarkerImage(
-          'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
-          new kakao.maps.Size(28, 34), { offset: new kakao.maps.Point(14, 34) }
-        );
-        var marker = new kakao.maps.Marker({ position: pos, image: img, map: campsVisible ? map : null });
-        kakao.maps.event.addListener(marker, 'click', function() {
-          if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
-          // 저장 직후에도 최신값을 보여주도록, 클릭 시점에 배열에서 다시 읽음
-          var latest = camps.find(function(x){ return x.id === camp.id; });
-          if (latest) camp = latest;
-          // 예약 정보가 이 오버레이의 핵심 — 기간을 못 찾았어도 메모만 적어둔 경우가 있음
-          var resvBody = '';
-          if (camp.reservation_open) {
-            resvBody += '<p style="margin:2px 0 0;font-size:11px;font-weight:700;color:#fbbf24">🔔 오픈: ' + esc(camp.reservation_open) + '</p>';
-          }
-          if (camp.use_season) {
-            resvBody += '<p style="margin:2px 0 0;font-size:11px;color:#e2e8f0">🗓 이용: ' + esc(camp.use_season) + '</p>';
-          }
-          if (camp.reservation_note) {
-            resvBody += '<p style="margin:2px 0 0;font-size:11px;color:#94a3b8">📝 ' + esc(camp.reservation_note) + '</p>';
-          }
-          if (!resvBody) {
-            resvBody = '<p style="margin:2px 0 0;font-size:11px;color:#64748b">미확인 — 아래 패널에서 ✏️ 직접 입력</p>';
-          }
-          var link = camp.reservation_url
-            ? '<a href="' + esc(camp.reservation_url) + '" target="_blank" style="color:#f472b6;text-decoration:none">예약·안내 바로가기 →</a>'
-            : esc(camp.reservation_org || '개별 문의');
-          var div = document.createElement('div');
-          div.style.cssText = 'background:#0f172a;border:2px solid ' + color
-            + ';border-radius:12px;padding:12px 14px;min-width:230px;max-width:280px;'
-            + 'font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.6);position:relative;bottom:12px;';
-          div.innerHTML = '<button onclick="closeOverlay()" style="position:absolute;top:6px;right:10px;'
-            + 'background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer">✕</button>'
-            + '<p style="margin:0 0 2px;font-size:13px;font-weight:800;color:#f1f5f9">' + emoji + ' ' + esc(camp.name) + '</p>'
-            + '<p style="margin:0 0 8px;font-size:11px;color:#64748b">' + esc(camp.category) + ' · ' + esc(camp.sigungu) + '</p>'
-            + '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:6px 8px;margin-bottom:6px">'
-            +   '<p style="margin:0;font-size:10px;color:#94a3b8">예약 정보</p>'
-            +   resvBody
-            + '</div>'
-            + '<p style="margin:0 0 4px;font-size:10px;color:#94a3b8">운영: <span style="color:#cbd5e1">' + esc(camp.operator || '미상') + '</span></p>'
-            + (camp.tel ? '<p style="margin:0 0 4px;font-size:10px;color:#94a3b8">☎ <span style="color:#cbd5e1">' + esc(camp.tel) + '</span></p>' : '')
-            + '<p style="margin:6px 0 0;font-size:11px">' + link + '</p>';
-          activeOverlay = new kakao.maps.CustomOverlay({ position: pos, content: div, yAnchor: 1.3 });
-          activeOverlay.setMap(map);
-          map.panTo(pos);
-          window.parent.postMessage({ type: 'CAMP_CLICK', id: camp.id }, '*');
-        });
-        campMarkers.push(marker);
-      });
-    }
-
-    function setCampsVisible(v) {
-      campsVisible = v;
-      campMarkers.forEach(function(m){ m.setMap(v ? map : null); });
-      var btn = document.getElementById('toggle-camps');
-      btn.classList.toggle('off', !v);
-      btn.textContent = v ? '⛺ 캠핑장 표시' : '⛺ 캠핑장 숨김';
-    }
-    function toggleCamps() {
-      setCampsVisible(!campsVisible);
-      window.parent.postMessage({ type: 'CAMPS_TOGGLED', visible: campsVisible }, '*');
-    }
-
-    function setForestsVisible(v) {
-      forestsVisible = v;
-      forestMarkers.forEach(function(m){ m.setMap(v ? map : null); });
-      var btn = document.getElementById('toggle-forests');
-      btn.classList.toggle('off', !v);
-      btn.textContent = v ? '🏕 휴양림 표시' : '🏕 휴양림 숨김';
-    }
-    function toggleForests() {
-      setForestsVisible(!forestsVisible);
-      window.parent.postMessage({ type: 'FORESTS_TOGGLED', visible: forestsVisible }, '*');
-    }
-
+    // ── 베이스맵 / 오버레이 ───────────────────────────
     // 카카오맵의 지형도·자전거도로는 별도 베이스맵이 아니라 일반지도 위에 얹는 오버레이 타입.
     // 얹혀 있던 오버레이를 모두 걷어낸 뒤 현재 상태대로 다시 올려, 중복·잔존을 신경 쓰지 않는다.
     function applyMapType() {
