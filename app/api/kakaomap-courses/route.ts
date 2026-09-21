@@ -42,8 +42,21 @@ export async function GET() {
       font-family:sans-serif; font-size:11px; color:#94a3b8;
     }
     #count-badge strong { color:#10b981; font-size:14px; }
+    /* 일반 / 위성 / 지형 전환 (카카오 기본 컨트롤 대신 지도 UI 톤에 맞춘 세그먼트) */
+    #map-type {
+      position:absolute; top:12px; right:12px; z-index:10;
+      display:flex; gap:4px; padding:4px;
+      background:rgba(15,23,42,0.9); border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;
+    }
+    #map-type button {
+      padding:6px 12px; font-size:11px; font-weight:700; font-family:sans-serif;
+      background:transparent; border:none; border-radius:7px;
+      color:#94a3b8; cursor:pointer; white-space:nowrap;
+    }
+    #map-type button.on { background:rgba(16,185,129,0.18); color:#10b981; }
     #legend {
-      position:absolute; top:12px; right:120px; z-index:10;
+      position:absolute; top:12px; right:186px; z-index:10;
       background:rgba(15,23,42,0.92); border:1px solid rgba(255,255,255,0.1);
       border-radius:10px; padding:8px 10px;
       font-family:sans-serif; font-size:10px; color:#94a3b8;
@@ -66,6 +79,11 @@ export async function GET() {
   </div>
   <div id="map"></div>
   <div id="count-badge">마커: <strong id="cnt">0</strong>개</div>
+  <div id="map-type">
+    <button data-type="ROADMAP" class="on" onclick="setMapType('ROADMAP')">일반</button>
+    <button data-type="SKYVIEW" onclick="setMapType('SKYVIEW')">위성</button>
+    <button data-type="TERRAIN" onclick="setMapType('TERRAIN')">지형</button>
+  </div>
   <div id="legend"></div>
   <button id="btn-all" onclick="resetMap()">🗺 전체 보기</button>
 
@@ -99,6 +117,7 @@ export async function GET() {
     })();
 
     var map, courses = [], activeOverlay = null, currentMarkers = [], clusterer = null;
+    var mapType = 'ROADMAP';     // 일반 / 위성(하이브리드) / 지형(일반지도 + 지형 오버레이)
     var activePolyline = null;   // 현재 표시 중인 경로
     var routeLoadingEl = null;   // 로딩 표시
 
@@ -157,8 +176,7 @@ export async function GET() {
           level: 12
         });
 
-        // 스카이뷰 / 일반지도 전환 컨트롤
-        map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
+        // 일반 / 위성 / 지형 전환은 오른쪽 위 커스텀 버튼(#map-type)이 담당
         // 확대/축소 컨트롤
         map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
@@ -319,6 +337,19 @@ export async function GET() {
     function closeOverlay() {
       if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; }
       clearPolyline();
+    }
+
+    // 카카오맵의 지형도는 별도 베이스맵이 아니라 일반지도 위에 얹는 오버레이 타입
+    function setMapType(type) {
+      if (!map) return;
+      if (mapType === 'TERRAIN') map.removeOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      map.setMapTypeId(type === 'SKYVIEW' ? kakao.maps.MapTypeId.HYBRID : kakao.maps.MapTypeId.ROADMAP);
+      if (type === 'TERRAIN') map.addOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      mapType = type;
+      var btns = document.querySelectorAll('#map-type button');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('on', btns[i].getAttribute('data-type') === type);
+      }
     }
 
     function resetMap() {

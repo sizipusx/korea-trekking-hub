@@ -29,6 +29,19 @@ export async function GET() {
       background:rgba(15,23,42,0.88); border:1px solid rgba(255,255,255,0.1);
       border-radius:12px; padding:10px 12px; max-height:80vh; overflow-y:auto;
     }
+    /* 일반 / 위성 / 지형 전환 (카카오 기본 컨트롤 대신 지도 UI 톤에 맞춘 세그먼트) */
+    #map-type {
+      position:absolute; top:12px; right:12px; z-index:10;
+      display:flex; gap:4px; padding:4px;
+      background:rgba(15,23,42,0.88); border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;
+    }
+    #map-type button {
+      padding:6px 12px; font-size:11px; font-weight:700; font-family:sans-serif;
+      background:transparent; border:none; border-radius:7px;
+      color:#94a3b8; cursor:pointer; white-space:nowrap;
+    }
+    #map-type button.on { background:rgba(16,185,129,0.18); color:#10b981; }
     #legend p.tit { font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px; font-family:sans-serif; }
     #legend .sep { height:1px; background:rgba(255,255,255,0.08); margin:8px 0 6px; }
     .leg-item { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
@@ -68,6 +81,11 @@ export async function GET() {
     <p style="color:#10b981;font-size:14px;font-family:sans-serif">카카오맵 로딩 중...</p>
   </div>
   <div id="map"></div>
+  <div id="map-type">
+    <button data-type="ROADMAP" class="on" onclick="setMapType('ROADMAP')">일반</button>
+    <button data-type="SKYVIEW" onclick="setMapType('SKYVIEW')">위성</button>
+    <button data-type="TERRAIN" onclick="setMapType('TERRAIN')">지형</button>
+  </div>
   <div id="legend">
     <p class="tit">트레일</p>
     <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div><span class="leg-text">동서트레일</span></div>
@@ -115,6 +133,7 @@ export async function GET() {
     };
 
     let map, trails = [], forests = [], camps = [], activeOverlay = null;
+    let mapType = 'ROADMAP';   // 일반 / 위성(하이브리드) / 지형(일반지도 + 지형 오버레이)
     let forestMarkers = [], forestsVisible = true;
     let campMarkers = [], campsVisible = true;
 
@@ -357,6 +376,19 @@ export async function GET() {
     function toggleForests() {
       setForestsVisible(!forestsVisible);
       window.parent.postMessage({ type: 'FORESTS_TOGGLED', visible: forestsVisible }, '*');
+    }
+
+    // 카카오맵의 지형도는 별도 베이스맵이 아니라 일반지도 위에 얹는 오버레이 타입
+    function setMapType(type) {
+      if (!map) return;
+      if (mapType === 'TERRAIN') map.removeOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      map.setMapTypeId(type === 'SKYVIEW' ? kakao.maps.MapTypeId.HYBRID : kakao.maps.MapTypeId.ROADMAP);
+      if (type === 'TERRAIN') map.addOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      mapType = type;
+      var btns = document.querySelectorAll('#map-type button');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('on', btns[i].getAttribute('data-type') === type);
+      }
     }
 
     function closeOverlay() { if (activeOverlay) { activeOverlay.setMap(null); activeOverlay = null; } }

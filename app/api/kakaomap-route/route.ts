@@ -37,6 +37,19 @@ export async function GET(req: NextRequest) {
     }
     @keyframes spin { to { transform:rotate(360deg); } }
     #overlay p { color:#94a3b8; font-size:13px; }
+    /* 일반 / 위성 / 지형 전환 (카카오 기본 컨트롤 대신 지도 UI 톤에 맞춘 세그먼트) */
+    #map-type {
+      position:absolute; top:12px; right:12px; z-index:10;
+      display:flex; gap:4px; padding:4px;
+      background:rgba(15,23,42,0.9); border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;
+    }
+    #map-type button {
+      padding:6px 12px; font-size:11px; font-weight:700;
+      background:transparent; border:none; border-radius:7px;
+      color:#94a3b8; cursor:pointer; white-space:nowrap;
+    }
+    #map-type button.on { background:rgba(16,185,129,0.18); color:#10b981; }
     #info-bar {
       position:absolute; bottom:0; left:0; right:0; z-index:10;
       background:rgba(15,23,42,0.88); border-top:1px solid rgba(16,185,129,0.25);
@@ -64,6 +77,11 @@ export async function GET(req: NextRequest) {
     <p id="error-msg">GPX 경로 정보가 없습니다</p>
   </div>
   <div id="map"></div>
+  <div id="map-type">
+    <button data-type="ROADMAP" class="on" onclick="setMapType('ROADMAP')">일반</button>
+    <button data-type="SKYVIEW" onclick="setMapType('SKYVIEW')">위성</button>
+    <button data-type="TERRAIN" onclick="setMapType('TERRAIN')">지형</button>
+  </div>
   <div id="info-bar" style="display:none">
     <div class="stat"><span class="stat-label">코스명</span><span class="stat-value" id="s-name">—</span></div>
     <div class="stat"><span class="stat-label">카테고리</span><span class="stat-value" id="s-cat">—</span></div>
@@ -76,6 +94,21 @@ export async function GET(req: NextRequest) {
     ${sdk}
 
     const COURSE_ID = ${JSON.stringify(id)};
+
+    let map = null;
+    let mapType = 'ROADMAP';   // 일반 / 위성(하이브리드) / 지형(일반지도 + 지형 오버레이)
+
+    // 카카오맵의 지형도는 별도 베이스맵이 아니라 일반지도 위에 얹는 오버레이 타입
+    function setMapType(type) {
+      if (!map) return;
+      if (mapType === 'TERRAIN') map.removeOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      map.setMapTypeId(type === 'SKYVIEW' ? kakao.maps.MapTypeId.HYBRID : kakao.maps.MapTypeId.ROADMAP);
+      if (type === 'TERRAIN') map.addOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+      mapType = type;
+      document.querySelectorAll('#map-type button').forEach((btn) => {
+        btn.classList.toggle('on', btn.dataset.type === type);
+      });
+    }
 
     function showError(msg) {
       document.getElementById('overlay').style.display = 'none';
@@ -117,14 +150,13 @@ export async function GET(req: NextRequest) {
 
         // 중심점: 첫 좌표
         const center = new kakao.maps.LatLng(coords[0][0], coords[0][1]);
-        const map = new kakao.maps.Map(document.getElementById('map'), {
+        map = new kakao.maps.Map(document.getElementById('map'), {
           center,
           level: 6,
         });
 
-        // 지도/스카이뷰 전환 컨트롤 + 줌 컨트롤
-        map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
-        map.addControl(new kakao.maps.ZoomControl(),    kakao.maps.ControlPosition.RIGHT);
+        // 일반 / 위성 / 지형 전환은 오른쪽 위 커스텀 버튼(#map-type)이 담당
+        map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
         // 폴리라인 그리기
         const path = coords.map(([lat, lng]) => new kakao.maps.LatLng(lat, lng));
