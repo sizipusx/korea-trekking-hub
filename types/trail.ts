@@ -13,7 +13,8 @@ export type TrailStatus =
   | '개통완료(2025)'
   | '2026 개통예정'
   | '2027 전면개통예정'
-  | '일부 제한운영';
+  | '일부 제한운영'
+  | '임시개통(2026)';
 
 export type TrailCategory =
   | '동서트레일'
@@ -43,6 +44,7 @@ export interface TrailRow {
   highlights: string;
   source: string;
   official_url: string;
+  map_image_url: string;   // 전체 안내지도 이미지 경로 (예: /maps/goldencoast/overview.jpg)
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +56,26 @@ export interface TrailGpxRow {
   lng: number;
   elevation_m: number;
   start_point: string;
+}
+
+// 다구간 트레일의 하위 코스 (예: 황금해안길 1/2/3코스)
+export interface TrailSectionRow {
+  id: number;
+  trail_id: string;
+  section_no: number;
+  name: string;
+  distance_km: number | null;
+  difficulty: string | null;
+  start_point: string;
+  end_point: string;
+  deck_start: string;   // 해안데크 등 특수구간 시점 (선택)
+  deck_end: string;     // 해안데크 등 특수구간 종점 (선택)
+  highlights: string;
+  lat: number | null;
+  lng: number | null;
+  map_image_url: string;  // 코스별 지도 이미지 경로
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TrailSeasonRow {
@@ -89,6 +111,7 @@ export interface Trail extends TrailRow {
   gpx?: TrailGpxRow;
   season?: TrailSeasonRow;
   user_log?: UserLogRowBase;
+  sections?: TrailSectionRow[];  // 하위 코스 목록 (section_no 순 정렬)
 }
 
 // ── Filter / Query Types ───────────────────────
