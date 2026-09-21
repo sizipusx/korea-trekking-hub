@@ -1,15 +1,17 @@
 'use client';
 
-import type { UserLogRow } from '@/types/trail';
-import { LOG_STATUS_META } from '@/types/trail';
+import type { ActivityLogRow } from '@/types/activity';
+import { ACTIVITY_META, LOG_STATUS_META, PLACE_TYPE_META } from '@/types/activity';
 
 interface Props {
-  log: UserLogRow & { trail_name: string; trail_distance: number };
+  log: ActivityLogRow;
   onEdit: () => void;
 }
 
 export default function LogCard({ log, onEdit }: Props) {
   const statusMeta = LOG_STATUS_META[log.status];
+  const activityMeta = ACTIVITY_META[log.activity];
+  const placeMeta = PLACE_TYPE_META[log.place_type];
 
   return (
     <div className="rounded-xl border p-4 transition hover:border-emerald-900/50 cursor-pointer"
@@ -21,6 +23,10 @@ export default function LogCard({ log, onEdit }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs font-bold px-2 py-0.5 rounded"
+              style={{ background: `${activityMeta.color}15`, color: activityMeta.color, border: `1px solid ${activityMeta.color}30` }}>
+              {activityMeta.emoji} {activityMeta.label}
+            </span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded"
               style={{ background: `${statusMeta.color}15`, color: statusMeta.color, border: `1px solid ${statusMeta.color}30` }}>
               {statusMeta.emoji} {statusMeta.label}
             </span>
@@ -28,11 +34,13 @@ export default function LogCard({ log, onEdit }: Props) {
               <span className="text-xs text-amber-400">{'★'.repeat(log.rating)}{'☆'.repeat(5 - log.rating)}</span>
             )}
           </div>
-          <p className="text-sm font-bold text-slate-100 truncate">{log.trail_name}</p>
+          <p className="text-sm font-bold text-slate-100 truncate">
+            {placeMeta.emoji} {log.place_name || '이름 없는 장소'}
+          </p>
           <p className="text-xs text-slate-500 mt-0.5">
             {log.visited_date && `📅 ${log.visited_date}`}
             {log.duration_days && ` · ${log.duration_days}일`}
-            {log.trail_distance > 0 && ` · ${log.trail_distance}km`}
+            {log.distance_km ? ` · ${log.distance_km}km` : ''}
           </p>
         </div>
         <button className="text-slate-500 hover:text-emerald-400 text-xs px-2 py-1 rounded border border-white/8 flex-shrink-0"

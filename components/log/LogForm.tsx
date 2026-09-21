@@ -1,22 +1,27 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import type { UserLogRow } from '@/types/trail';
-import { LOG_STATUS_META, WEATHER_OPTIONS, COMPANION_OPTIONS, DIFFICULTY_FELT_OPTIONS } from '@/types/trail';
+import type { ActivityLogKey, ActivityLogRow } from '@/types/activity';
+import { ACTIVITY_META, LOG_STATUS_META, PLACE_TYPE_META } from '@/types/activity';
+import { WEATHER_OPTIONS, COMPANION_OPTIONS, DIFFICULTY_FELT_OPTIONS } from '@/types/trail';
 import { uploadPhoto, deletePhoto } from '@/lib/storage';
 
 interface Props {
-  trailId: string;
-  trailName: string;
+  logKey: ActivityLogKey;
+  placeName: string;
+  /** 장소 데이터에 적혀 있는 거리 — 새 기록의 기본값으로만 쓴다 */
+  suggestedKm?: number | null;
   userId: string;
-  existing?: UserLogRow | null;
+  existing?: ActivityLogRow | null;
   onSave: () => void;
   onClose: () => void;
 }
 
 const STARS = [1, 2, 3, 4, 5];
 
-export default function LogForm({ trailId, trailName, userId, existing, onSave, onClose }: Props) {
+export default function LogForm({
+  logKey, placeName, suggestedKm, userId, existing, onSave, onClose,
+}: Props) {
   const [status, setStatus]   = useState(existing?.status ?? 'planned');
   const [date, setDate]       = useState(existing?.visited_date?.slice(0, 10) ?? '');
   const [rating, setRating]   = useState(existing?.rating ?? 0);
@@ -25,11 +30,17 @@ export default function LogForm({ trailId, trailName, userId, existing, onSave, 
   const [companions, setCompanions] = useState(existing?.companions ?? '혼자');
   const [diffFelt, setDiffFelt]   = useState(existing?.difficulty_felt ?? '');
   const [days, setDays]       = useState(existing?.duration_days ?? 1);
+  const [km, setKm]           = useState<string>(
+    String(existing?.distance_km ?? suggestedKm ?? ''),
+  );
   const [photos, setPhotos]   = useState<string[]>(existing?.photos ?? []);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const activityMeta = ACTIVITY_META[logKey.activity];
+  const placeMeta = PLACE_TYPE_META[logKey.placeType];
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -42,7 +53,7 @@ export default function LogForm({ trailId, trailName, userId, existing, onSave, 
     const newUrls: string[] = [];
     for (const file of files) {
       if (file.size > 5 * 1024 * 1024) { setError('파일 크기는 5MB 이하만 가능합니다.'); continue; }
-      const { url, error: upErr } = await uploadPhoto(userId, trailId, file);
+      const { url, error: upErr } = await uploadPhoto(userId, logKey.placeId ?? 'free', file);
       if (url) newUrls.push(url);
       else if (upErr) setError(upErr);
     }
@@ -64,10 +75,14 @@ export default function LogForm({ trailId, trailName, userId, existing, onSave, 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trailId,
+          activity: logKey.activity,
+          placeType: logKey.placeType,
+          placeId: logKey.placeId,
+          place_name: placeName,
           status,
           visited_date: date || null,
           rating: rating || null,
+          distance_km: km === '' ? null : Number(km),
           notes,
           weather,
           companions,
@@ -86,11 +101,12 @@ export default function LogForm({ trailId, trailName, userId, existing, onSave, 
   };
 
   const handleDelete = async () => {
+    if (!existing) return;
     if (!confirm('기록을 삭제하시겠습니까?')) return;
     await fetch('/api/log', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trailId }),
+      body: JSON.stringify({ id: existing.id }),
     });
     onSave();
     onClose();
@@ -102,21 +118,25 @@ export default function LogForm({ trailId, trailName, userId, existing, onSave, 
       <div className="w-full max-w-lg rounded-2xl overflow-hidden"
         style={{ background: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
 
-        {/* 헤더 */}
+        {/* 헤더 — 어떤 활동의 어느 장소 기록인지 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/8"
           style={{ background: 'linear-gradient(90deg,#052e16,#0c4a6e)' }}>
-          <div>
-            <p className="text-xs text-emerald-400 mb-0.5">탐방 기록</p>
-            <h2 className="text-sm font-black text-slate-100">{trailName}</h2>
+          <div className="min-w-0">
+            <p className="text-xs mb-0.5" style={{ color: activityMeta.color }}>
+              {activityMeta.emoji} {activityMeta.label} 기록
+            </p>
+            <h2 className="text-sm font-black text-slate-100 truncate">
+              {placeMeta.emoji} {placeName || '이름 없는 장소'}
+            </h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white text-xl flex-shrink-0">✕</button>
         </div>
 
         <div className="px-5 py-4 space-y-4">
 
-          {/* 탐방 상태 */}
+          {/* 상태 */}
           <div>
-            <p className="text-xs text-slate-400 mb-2 uppercase tracking-widest">탐방 상태</p>
+            <p className="text-xs text-slate-400 mb-2 uppercase tracking-widest">상태</p>
             <div className="flex gap-2">
               {(Object.entries(LOG_STATUS_META) as [keyof typeof LOG_STATUS_META, typeof LOG_STATUS_META[keyof typeof LOG_STATUS_META]][]).map(([key, meta]) => (
                 <button key={key} onClick={() => setStatus(key)}
@@ -132,18 +152,25 @@ export default function LogForm({ trailId, trailName, userId, existing, onSave, 
             </div>
           </div>
 
-          {/* 방문일 + 소요일수 */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* 방문일 + 소요일수 + 거리 */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <p className="text-xs text-slate-400 mb-1.5">📅 방문일</p>
+              <p className="text-xs text-slate-400 mb-1.5">📅 날짜</p>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
                 className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500" />
             </div>
             <div>
-              <p className="text-xs text-slate-400 mb-1.5">🕐 소요 일수</p>
+              <p className="text-xs text-slate-400 mb-1.5">🕐 일수</p>
               <input type="number" min={1} max={365} value={days}
                 onChange={e => setDays(Number(e.target.value))}
                 className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              {/* 라이딩·백패킹은 실제로 간 거리가 기록의 핵심이라 직접 적는다 */}
+              <p className="text-xs text-slate-400 mb-1.5">📏 거리(km)</p>
+              <input type="number" min={0} step="0.1" value={km}
+                onChange={e => setKm(e.target.value)} placeholder="0"
+                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-emerald-500" />
             </div>
           </div>
 
@@ -212,9 +239,9 @@ export default function LogForm({ trailId, trailName, userId, existing, onSave, 
 
           {/* 메모 */}
           <div>
-            <p className="text-xs text-slate-400 mb-1.5">📝 탐방 메모</p>
+            <p className="text-xs text-slate-400 mb-1.5">📝 메모</p>
             <textarea value={notes} onChange={e => setNotes(e.target.value)}
-              rows={3} placeholder="코스 후기, 주의사항, 추천 포인트 등을 자유롭게 기록하세요..."
+              rows={3} placeholder="후기, 주의사항, 추천 포인트 등을 자유롭게 기록하세요..."
               className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-emerald-500 resize-none" />
           </div>
 
