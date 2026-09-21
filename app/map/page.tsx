@@ -5,8 +5,8 @@ import { getMappableCamps } from '@/lib/camps';
 import MapPageClient from '@/components/map/MapPageClient';
 
 export const metadata = {
-  title: '전국 트래킹·휴양림·공공캠핑장 지도 | Korea Trekking Hub',
-  description: '전국 트래킹 코스, 자연휴양림, 지자체 운영 공공 캠핑장을 카카오맵에서 한눈에 확인하세요.',
+  title: '전국 아웃도어 지도 — 자전거길·캠핑장·휴양림·트레킹 | Korea Outdoor Hub',
+  description: '전국 자전거도로, 지자체 운영 공공 캠핑장, 자연휴양림, 트레킹 코스를 카카오맵에서 한눈에 확인하세요.',
 };
 
 export const revalidate = 3600;

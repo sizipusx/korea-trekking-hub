@@ -10,8 +10,8 @@ const notoSansKR = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: 'Korea Trekking Hub — 전국 트래킹·백패킹 가이드',
-  description: '한국 전국의 트래킹·백패킹 코스를 한눈에.',
+  title: 'Korea Outdoor Hub — 전국 라이딩·백패킹·캠핑·트레킹 가이드',
+  description: '전국의 자전거길, 백패킹 장소, 캠핑장, 트레킹 코스를 한눈에.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

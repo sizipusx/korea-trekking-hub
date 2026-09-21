@@ -5,7 +5,7 @@ import { getRawCourses } from '@/lib/rawCourses';
 import CoursesPageClient from '@/components/courses/CoursesPageClient';
 
 export const metadata: Metadata = {
-  title: '코스 탐색 — Korea Trekking Hub',
+  title: '코스 탐색 — Korea Outdoor Hub',
   description: 'CSV·GPX 원천 데이터 기반 7,000+ 트레킹 코스 검색 및 필터',
 };
 

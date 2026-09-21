@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-// Korea Trekking Hub — Camp(지자체 운영 공공 캠핑장) Type Definitions
+// Korea Outdoor Hub — Camp(지자체 운영 공공 캠핑장) Type Definitions
 // 위치 + 예약정책 데이터 (자연휴양림 forests 와 동일한 구조)
 // ─────────────────────────────────────────────
 

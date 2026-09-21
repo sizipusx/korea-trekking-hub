@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-// Korea Trekking Hub — Type Definitions
+// Korea Outdoor Hub — Type Definitions
 // ─────────────────────────────────────────────
 
 export type Difficulty = '하' | '중하' | '중' | '중상' | '상' | '최상';

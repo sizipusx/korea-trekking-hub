@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-// Korea Trekking Hub — Raw Course Types
+// Korea Outdoor Hub — Raw Course Types
 // CSV / GPX / GeoJSON 분석 데이터 타입 정의
 // ─────────────────────────────────────────────
 

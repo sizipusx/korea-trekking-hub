@@ -273,7 +273,7 @@ export default function DashboardClient({ rawStats, trailStats }: Props) {
         </section>
 
         <footer className="py-4 border-t border-emerald-900/40 text-center">
-          <p className="text-[11px] text-emerald-700">Korea Trekking Hub — 대시보드 · Next.js 16 + Supabase</p>
+          <p className="text-[11px] text-emerald-700">Korea Outdoor Hub — 대시보드 · Next.js 16 + Supabase</p>
         </footer>
       </main>
     </div>

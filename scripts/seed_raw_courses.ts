@@ -213,7 +213,7 @@ async function upsertBatch(rows: (GpxRow | CsvRow)[], batchNum: number) {
 
 // ── 메인 ────────────────────────────────────────────────────────
 async function main() {
-  console.log('\n🚀  Korea Trekking Hub — raw_courses 시드 스크립트 시작\n');
+  console.log('\n🚀  Korea Outdoor Hub — raw_courses 시드 스크립트 시작\n');
 
   // 기존 데이터 초기화 여부 확인
   const { count: existing } = await supabase

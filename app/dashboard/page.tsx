@@ -5,7 +5,7 @@ import { getTrailStats } from '@/lib/trails';
 import DashboardClient from '@/components/dashboard/DashboardClient';
 
 export const metadata: Metadata = {
-  title: '대시보드 — Korea Trekking Hub',
+  title: '대시보드 — Korea Outdoor Hub',
   description: '원천 데이터 통계 및 마스터 트레일 현황 종합 대시보드',
 };
 

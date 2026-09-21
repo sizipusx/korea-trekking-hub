@@ -112,7 +112,7 @@ export default function MapPageClient({ trails, forests, camps }: Props) {
           style={{ background: 'rgba(5,46,22,0.95)' }}>
           <div className="flex items-center gap-2">
             <span className="text-xl">🥾</span>
-            <span className="text-sm font-black text-emerald-100">Korea Trekking Hub</span>
+            <span className="text-sm font-black text-emerald-100">Korea Outdoor Hub</span>
           </div>
           <span className="text-xs text-slate-500">
             {trails.length}코스 · 🏕{mappableForests.length} · ⛺{mappableCamps.length}

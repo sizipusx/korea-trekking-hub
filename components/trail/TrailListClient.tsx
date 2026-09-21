@@ -63,9 +63,9 @@ export default function TrailListClient({ initialTrails, stats }: Props) {
             <div className="flex items-center gap-3">
               <span className="text-4xl">🥾</span>
               <div>
-                <h1 className="text-2xl font-black text-emerald-50 tracking-tight">Korea Trekking Hub</h1>
+                <h1 className="text-2xl font-black text-emerald-50 tracking-tight">Korea Outdoor Hub</h1>
                 <p className="text-xs text-emerald-400 tracking-widest mt-0.5">
-                  전국 트래킹·백패킹 마스터 데이터베이스 — Powered by Next.js + Supabase
+                  전국 아웃도어 마스터 데이터베이스 — Powered by Next.js + Supabase
                 </p>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function TrailListClient({ initialTrails, stats }: Props) {
         {/* ── FOOTER ────────────────────────────────── */}
         <footer className="mt-6 py-4 text-center border-t border-emerald-900/40">
           <p className="text-[11px] text-emerald-700">
-            🥾 Korea Trekking Hub — Phase 2-B  |  Next.js 15 + Supabase  |  전국 {initialTrails.length}개 코스
+            🥾 Korea Outdoor Hub — Phase 2-B  |  Next.js 15 + Supabase  |  전국 {initialTrails.length}개 코스
           </p>
           <p className="text-[10px] text-slate-700 mt-1">
             Phase 3 예정: 카카오맵 API 연동 · GPX 루트 시각화 · 개인 탐방 기록

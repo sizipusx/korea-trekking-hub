@@ -5,7 +5,7 @@ import { getMyLogs, getMyProfile } from '@/lib/logs';
 import { getTrails } from '@/lib/trails';
 import LogPageClient from '@/components/log/LogPageClient';
 
-export const metadata = { title: '나의 탐방 기록 | Korea Trekking Hub' };
+export const metadata = { title: '나의 탐방 기록 | Korea Outdoor Hub' };
 
 export default async function LogPage() {
   const supabase = await createClient();

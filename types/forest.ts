@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-// Korea Trekking Hub — Forest(휴양림) Type Definitions
+// Korea Outdoor Hub — Forest(휴양림) Type Definitions
 // 자연휴양림 위치 + 예약정책 데이터
 // ─────────────────────────────────────────────
 

@@ -42,8 +42,8 @@ export default function AuthPage() {
         {/* 로고 */}
         <div className="text-center mb-8">
           <span className="text-5xl">🥾</span>
-          <h1 className="text-xl font-black text-emerald-100 mt-3">Korea Trekking Hub</h1>
-          <p className="text-sm text-slate-500 mt-1">나만의 트래킹 기록을 시작하세요</p>
+          <h1 className="text-xl font-black text-emerald-100 mt-3">Korea Outdoor Hub</h1>
+          <p className="text-sm text-slate-500 mt-1">나만의 아웃도어 기록을 시작하세요</p>
         </div>
 
         {/* 폼 카드 */}

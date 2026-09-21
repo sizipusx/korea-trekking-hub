@@ -1,6 +1,6 @@
 // scripts/seed_camps.ts
 // ─────────────────────────────────────────────────────────────────
-// Korea Trekking Hub — 지자체 운영 공공 캠핑장 시드 + 카카오 지오코딩
+// Korea Outdoor Hub — 지자체 운영 공공 캠핑장 시드 + 카카오 지오코딩
 // 실행: npx tsx scripts/seed_camps.ts
 //
 // 필요 환경변수 (.env.local):

@@ -41,7 +41,7 @@ export default function MapSidebar({
         style={{ background: 'linear-gradient(180deg,#052e16,#0a1628)' }}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-2xl">🥾</span>
-          <h1 className="text-sm font-black text-emerald-100 tracking-tight">Korea Trekking Hub</h1>
+          <h1 className="text-sm font-black text-emerald-100 tracking-tight">Korea Outdoor Hub</h1>
         </div>
         <p className="text-[10px] text-emerald-600">전국 {trails.length}개 코스 · 🏕 휴양림 {forestCount}개</p>
       </div>

@@ -1,6 +1,6 @@
 // scripts/seed_forests.ts
 // ─────────────────────────────────────────────────────────────────
-// Korea Trekking Hub — 자연휴양림 시드 + 카카오 지오코딩
+// Korea Outdoor Hub — 자연휴양림 시드 + 카카오 지오코딩
 // 실행: npx tsx scripts/seed_forests.ts
 //
 // 필요 환경변수 (.env.local):
